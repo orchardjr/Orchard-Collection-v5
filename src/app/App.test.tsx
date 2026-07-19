@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { App } from './App'
 
 describe('App', () => {
-  it('renders the home route', () => {
+  it('renders the home route', async () => {
     const queryClient = new QueryClient()
 
     render(
@@ -18,7 +18,9 @@ describe('App', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: 'Dashboard' }),
+      await screen.findByRole('heading', {
+        name: 'Welcome back to Orchard Collection.',
+      }),
     ).toBeInTheDocument()
   })
 })

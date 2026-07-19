@@ -1,7 +1,7 @@
 import { CircleCheck, CircleX, Droplets, Sprout } from 'lucide-react'
 
 import { Card } from '../../../components/ui/Card'
-import { Property } from '../../../components/ui/Property'
+import { PropertyField } from '../../../components/ui/PropertyField'
 import type { Plant } from '../../../models'
 
 interface CareTabProps {
@@ -21,19 +21,19 @@ export function CareTab({ plant }: CareTabProps) {
       description="The current routine for this collection item"
     >
       <dl className="grid gap-3 sm:grid-cols-2">
-        <Property
+        <PropertyField
           label="Water interval"
           value={interval(plant.waterIntervalDays)}
           icon={Droplets}
           emptyValue="Not set"
         />
-        <Property
+        <PropertyField
           label="Fertilizer interval"
           value={interval(plant.fertilizerIntervalDays)}
           icon={Sprout}
           emptyValue="Not set"
         />
-        <Property
+        <PropertyField
           label="Mounted"
           value={
             plant.mounted === undefined
@@ -45,7 +45,7 @@ export function CareTab({ plant }: CareTabProps) {
           icon={plant.mounted ? CircleCheck : CircleX}
           emptyValue="Not set"
         />
-        <Property
+        <PropertyField
           label="Moss pole"
           value={
             plant.mossPole === undefined

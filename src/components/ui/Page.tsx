@@ -1,36 +1,35 @@
+import { motion } from 'framer-motion'
 import type { PropsWithChildren, ReactNode } from 'react'
+
+import { PageHeader } from './PageHeader'
 
 interface PageProps {
   title: string
   subtitle?: string
   actions?: ReactNode
+  header?: ReactNode
 }
 
 export function Page({
   actions,
   children,
+  header,
   subtitle,
   title,
 }: PropsWithChildren<PageProps>) {
   return (
-    <div className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
-      <header className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div>
-          <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-accent">
-            Orchard workspace
-          </p>
-          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-            {title}
-          </h1>
-          {subtitle && (
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              {subtitle}
-            </p>
-          )}
-        </div>
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
-      </header>
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.24, ease: 'easeOut' }}
+      className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-6 sm:py-10 lg:px-10"
+    >
+      <div className="mb-9">
+        {header ?? (
+          <PageHeader title={title} subtitle={subtitle} actions={actions} />
+        )}
+      </div>
       {children}
-    </div>
+    </motion.div>
   )
 }

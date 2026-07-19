@@ -1,5 +1,5 @@
 import { Card } from '../../../components/ui/Card'
-import { Property } from '../../../components/ui/Property'
+import { PropertyField } from '../../../components/ui/PropertyField'
 import type { Plant } from '../../../models'
 
 interface OverviewTabProps {
@@ -36,7 +36,7 @@ export function OverviewTab({ plant }: OverviewTabProps) {
     >
       <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {properties.map((property) => (
-          <Property key={property.label} {...property} />
+          <PropertyField key={property.label} {...property} />
         ))}
       </dl>
     </Card>

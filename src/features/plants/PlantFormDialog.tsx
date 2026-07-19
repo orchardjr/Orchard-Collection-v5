@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useEffect, useState, type FormEvent } from 'react'
 
 import type { CreateInput } from '../../db/repositories'
@@ -79,7 +80,9 @@ export function PlantFormDialog({
     'mt-1.5 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15'
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       className="fixed inset-0 z-[70] grid place-items-center bg-overlay p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
@@ -93,7 +96,12 @@ export function PlantFormDialog({
         disabled={saving}
         aria-label="Close dialog"
       />
-      <div className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-border bg-surface shadow-2xl">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.2 }}
+        className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[1.5rem] border border-border/75 bg-surface shadow-2xl"
+      >
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-5 py-4 sm:px-6">
           <div>
             <h2
@@ -224,7 +232,7 @@ export function PlantFormDialog({
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }

@@ -45,7 +45,7 @@ export function PlantDetailsTabs({
 
   return (
     <div
-      className="overflow-x-auto border-b border-border"
+      className="overflow-x-auto rounded-2xl border border-border/70 bg-surface p-1.5 shadow-sm"
       role="tablist"
       aria-label="Plant details sections"
     >
@@ -64,7 +64,7 @@ export function PlantDetailsTabs({
             tabIndex={activeTab === tab.id ? 0 : -1}
             onClick={() => onChange(tab.id)}
             onKeyDown={(event) => handleKeyDown(event, index)}
-            className={`border-b-2 px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent ${activeTab === tab.id ? 'border-accent text-accent' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+            className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition-all focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent ${activeTab === tab.id ? 'bg-accent-soft text-accent shadow-sm' : 'text-muted-foreground hover:bg-surface-muted hover:text-foreground'}`}
           >
             {tab.label}
           </button>

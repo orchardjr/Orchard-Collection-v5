@@ -24,15 +24,15 @@ export function TopBar() {
       >
         <Menu size={21} />
       </Button>
-      <div className="relative hidden max-w-sm flex-1 sm:block">
+      <div className="relative hidden max-w-md flex-1 sm:block">
         <Search
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
           size={17}
         />
         <input
           type="search"
           placeholder="Search your collection…"
-          className="h-10 w-full rounded-xl border border-border bg-surface pl-10 pr-4 text-sm text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
+          className="h-11 w-full rounded-2xl border border-border/75 bg-surface pl-10 pr-4 text-sm text-foreground shadow-sm outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
         />
       </div>
       <div className="ml-auto flex items-center gap-2">

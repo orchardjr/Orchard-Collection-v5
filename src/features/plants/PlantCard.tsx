@@ -1,8 +1,10 @@
 import { Archive, Heart, Leaf, Pencil, PawPrint } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 
 import type { Plant } from '../../models'
 import { Button } from '../../components/ui/Button'
+import { Badge } from '../../components/ui/Badge'
 import { getPlantDisplayName } from '../../lib/plants'
 
 interface PlantCardProps {
@@ -15,7 +17,11 @@ export function PlantCard({ onArchive, onEdit, plant }: PlantCardProps) {
   const Icon = plant.kind === 'animal' ? PawPrint : Leaf
 
   return (
-    <article className="group overflow-hidden rounded-2xl border border-border bg-surface shadow-card transition hover:-translate-y-0.5 hover:border-accent/50">
+    <motion.article
+      whileHover={{ y: -3 }}
+      transition={{ duration: 0.2 }}
+      className="group overflow-hidden rounded-[1.4rem] border border-border/75 bg-surface shadow-card transition-shadow hover:shadow-card-hover"
+    >
       <Link
         to={`/collection/${plant.id}`}
         className="relative block aspect-[16/10] overflow-hidden bg-accent-soft"
@@ -37,18 +43,21 @@ export function PlantCard({ onArchive, onEdit, plant }: PlantCardProps) {
           </div>
         )}
         {plant.favorite && (
-          <span
+          <motion.span
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
             className="absolute right-3 top-3 grid size-9 place-items-center rounded-full bg-surface/90 text-red-500 shadow-sm"
             aria-label="Favorite"
           >
             <Heart size={17} fill="currentColor" />
-          </span>
+          </motion.span>
         )}
-        <span
-          className={`absolute bottom-3 left-3 rounded-full px-2.5 py-1 text-[11px] font-bold capitalize shadow-sm ${plant.status === 'active' ? 'bg-accent text-accent-foreground' : 'bg-surface text-muted-foreground'}`}
+        <Badge
+          variant={plant.status === 'active' ? 'accent' : 'neutral'}
+          className="absolute bottom-3 left-3 capitalize shadow-sm"
         >
           {plant.status}
-        </span>
+        </Badge>
       </Link>
       <div className="p-5">
         <Link to={`/collection/${plant.id}`}>
@@ -80,6 +89,6 @@ export function PlantCard({ onArchive, onEdit, plant }: PlantCardProps) {
           )}
         </div>
       </div>
-    </article>
+    </motion.article>
   )
 }

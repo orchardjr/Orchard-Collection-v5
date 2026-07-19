@@ -1,6 +1,7 @@
 import type { HTMLAttributes, PropsWithChildren, ReactNode } from 'react'
 
 import { cn } from '../../lib/cn'
+import { SectionHeader } from './SectionHeader'
 
 interface CardProps extends HTMLAttributes<HTMLElement> {
   title?: string
@@ -19,27 +20,19 @@ export function Card({
   return (
     <section
       className={cn(
-        'rounded-2xl border border-border bg-surface p-5 shadow-card sm:p-6',
+        'rounded-[1.4rem] border border-border/75 bg-surface p-5 shadow-card transition-[border-color,box-shadow,transform] duration-200 hover:border-border hover:shadow-card-hover sm:p-7',
         className,
       )}
       {...props}
     >
       {(title || action) && (
-        <header className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            {title && (
-              <h2 className="font-display text-lg font-semibold text-foreground">
-                {title}
-              </h2>
-            )}
-            {description && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {description}
-              </p>
-            )}
-          </div>
-          {action}
-        </header>
+        <div className="mb-6">
+          <SectionHeader
+            title={title ?? ''}
+            description={description}
+            action={action}
+          />
+        </div>
       )}
       {children}
     </section>

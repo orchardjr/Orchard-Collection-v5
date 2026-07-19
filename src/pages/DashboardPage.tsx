@@ -1,16 +1,21 @@
 import {
   ArrowRight,
+  Boxes,
   Check,
   Clock3,
   ImagePlus,
   Library,
   Plus,
+  Sprout,
   Tags,
 } from 'lucide-react'
 
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Page } from '../components/ui/Page'
+import { PageHeader } from '../components/ui/PageHeader'
+import { Skeleton } from '../components/ui/Skeleton'
+import { StatCard } from '../components/ui/StatCard'
 import { useDashboardData } from '../hooks/useOrchardData'
 import type { Task } from '../models'
 
@@ -25,11 +30,19 @@ function formatTaskTime(task: Task) {
 
 function DashboardLoading() {
   return (
-    <div
-      className="h-80 animate-pulse rounded-2xl border border-border bg-surface"
-      aria-label="Loading dashboard"
-    />
+    <div className="grid gap-5 xl:grid-cols-12" aria-label="Loading dashboard">
+      <Skeleton className="h-72 xl:col-span-7" />
+      <Skeleton className="h-72 xl:col-span-5" />
+      <Skeleton className="h-64 xl:col-span-7" />
+      <Skeleton className="h-64 xl:col-span-5" />
+    </div>
   )
+}
+
+function getGreeting(hour: number) {
+  if (hour < 12) return 'Good morning.'
+  if (hour < 18) return 'Good afternoon.'
+  return 'Good evening.'
 }
 
 export function DashboardPage() {
@@ -45,12 +58,22 @@ export function DashboardPage() {
   return (
     <Page
       title="Dashboard"
-      subtitle="A calm overview of your collection and what needs attention today."
-      actions={
-        <Button>
-          <Plus size={17} />
-          Add item
-        </Button>
+      header={
+        <PageHeader
+          eyebrow={getGreeting(new Date().getHours())}
+          title="Welcome back to Orchard Collection."
+          subtitle={
+            data
+              ? `${data.plants.filter((plant) => plant.status === 'active').length} living plants · ${data.spaces.length} spaces · ${data.tasks.filter((task) => task.status !== 'completed').length} tasks today`
+              : 'Your collection is waking up.'
+          }
+          actions={
+            <Button>
+              <Plus size={17} />
+              Add item
+            </Button>
+          }
+        />
       }
     >
       {isLoading || !data ? (
@@ -63,23 +86,29 @@ export function DashboardPage() {
             className="xl:col-span-7"
           >
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {[
-                [data.plants.length, 'Living items'],
-                [data.spaces.length, 'Spaces'],
-                [data.media.length, 'Media assets'],
-                [
+              <StatCard
+                label="Living items"
+                value={data.plants.length}
+                icon={Sprout}
+              />
+              <StatCard
+                label="Spaces"
+                value={data.spaces.length}
+                icon={Boxes}
+              />
+              <StatCard
+                label="Media assets"
+                value={data.media.length}
+                icon={ImagePlus}
+              />
+              <StatCard
+                label="Active"
+                value={
                   data.plants.filter((plant) => plant.status === 'active')
-                    .length,
-                  'Active',
-                ],
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-xl bg-surface-muted p-4">
-                  <p className="font-display text-2xl font-semibold text-foreground">
-                    {value}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-                </div>
-              ))}
+                    .length
+                }
+                icon={Library}
+              />
             </div>
             <div className="mt-5 h-2 overflow-hidden rounded-full bg-surface-muted">
               <div

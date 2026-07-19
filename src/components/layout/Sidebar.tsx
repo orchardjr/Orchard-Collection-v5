@@ -33,7 +33,7 @@ export function Sidebar({ drawer = false, onNavigate }: SidebarProps) {
         </span>
       </NavLink>
 
-      <nav className="mt-8 space-y-1" aria-label="Primary navigation">
+      <nav className="mt-9 space-y-1.5" aria-label="Primary navigation">
         {navigationItems.map(({ icon: Icon, label, path }) => (
           <NavLink
             key={path}
@@ -42,10 +42,10 @@ export function Sidebar({ drawer = false, onNavigate }: SidebarProps) {
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors',
+                'relative flex min-h-11 items-center gap-3 rounded-xl px-3.5 text-sm font-semibold transition-all duration-200',
                 isActive
-                  ? 'bg-sidebar-active text-sidebar-active-foreground'
-                  : 'text-muted-foreground hover:bg-surface-muted hover:text-foreground',
+                  ? 'bg-sidebar-active text-sidebar-active-foreground shadow-sm before:absolute before:left-0 before:h-5 before:w-1 before:rounded-full before:bg-accent'
+                  : 'text-muted-foreground hover:translate-x-0.5 hover:bg-surface-muted hover:text-foreground',
               )
             }
           >
@@ -55,11 +55,15 @@ export function Sidebar({ drawer = false, onNavigate }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="mt-auto rounded-2xl border border-sidebar-border bg-surface-muted p-4">
+      <div className="relative mt-auto overflow-hidden rounded-[1.25rem] border border-sidebar-border/80 bg-gradient-to-br from-surface-muted to-accent-soft/60 p-5 shadow-sm">
+        <span
+          className="absolute -right-5 -top-5 size-16 rounded-full bg-accent/10"
+          aria-hidden="true"
+        />
         <p className="text-xs font-semibold uppercase tracking-wider text-accent">
           Seasonal note
         </p>
-        <p className="mt-2 text-sm leading-5 text-muted-foreground">
+        <p className="relative mt-2.5 text-sm leading-6 text-muted-foreground">
           A place for every object, story, and memory.
         </p>
       </div>

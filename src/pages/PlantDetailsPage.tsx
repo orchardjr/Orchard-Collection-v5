@@ -1,8 +1,10 @@
 import { ArrowLeft } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { Page } from '../components/ui/Page'
+import { Skeleton } from '../components/ui/Skeleton'
 import { CareTab } from '../features/plant-details/tabs/CareTab'
 import { NotesTab } from '../features/plant-details/tabs/NotesTab'
 import { OverviewTab } from '../features/plant-details/tabs/OverviewTab'
@@ -103,15 +105,22 @@ export function PlantDetailsPage() {
       <div className="mt-6">
         <PlantDetailsTabs activeTab={activeTab} onChange={setActiveTab} />
       </div>
-      <section
-        id={`plant-panel-${activeTab}`}
-        role="tabpanel"
-        aria-labelledby={`plant-tab-${activeTab}`}
-        tabIndex={0}
-        className="mt-6 focus:outline-none"
-      >
-        {content[activeTab]}
-      </section>
+      <AnimatePresence mode="wait">
+        <motion.section
+          key={activeTab}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -2 }}
+          transition={{ duration: 0.18 }}
+          id={`plant-panel-${activeTab}`}
+          role="tabpanel"
+          aria-labelledby={`plant-tab-${activeTab}`}
+          tabIndex={0}
+          className="mt-6 focus:outline-none"
+        >
+          {content[activeTab]}
+        </motion.section>
+      </AnimatePresence>
     </Page>
   )
 }
@@ -119,20 +128,20 @@ export function PlantDetailsPage() {
 function PlantDetailsLoading() {
   return (
     <div
-      className="mx-auto max-w-[1440px] space-y-6 px-4 py-6 sm:px-6 lg:px-10"
+      className="mx-auto max-w-[1440px] space-y-6 px-4 py-7 sm:px-6 sm:py-10 lg:px-10"
       aria-label="Loading plant details"
     >
-      <div className="h-12 w-64 animate-pulse rounded-xl bg-surface" />
-      <div className="h-96 animate-pulse rounded-3xl border border-border bg-surface" />
-      <div className="h-64 animate-pulse rounded-2xl border border-border bg-surface" />
+      <Skeleton className="h-14 w-72" />
+      <Skeleton className="h-96 border border-border/60" />
+      <Skeleton className="h-64 border border-border/60" />
     </div>
   )
 }
 
 function TabLoading({ label }: { label: string }) {
   return (
-    <div
-      className="h-64 animate-pulse rounded-2xl border border-border bg-surface"
+    <Skeleton
+      className="h-64 border border-border/60"
       aria-label={`Loading ${label}`}
     />
   )

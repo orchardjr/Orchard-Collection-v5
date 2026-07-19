@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Page } from '../components/ui/Page'
+import { Skeleton } from '../components/ui/Skeleton'
 import type { CreateInput } from '../db/repositories'
 import { PlantCard } from '../features/plants/PlantCard'
 import { PlantFormDialog } from '../features/plants/PlantFormDialog'
@@ -91,21 +92,21 @@ export function CollectionPage() {
         </Button>
       }
     >
-      <div className="mb-6 grid gap-3 rounded-2xl border border-border bg-surface p-3 shadow-card md:grid-cols-[minmax(240px,1fr)_auto_auto]">
+      <div className="mb-7 grid gap-3 rounded-[1.4rem] border border-border/75 bg-surface p-3 shadow-card md:grid-cols-[minmax(240px,1fr)_auto_auto]">
         <label className="relative">
           <span className="sr-only">Search plants</span>
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
             size={17}
           />
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search by name or cultivar…"
-            className="h-11 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-sm text-foreground outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
+            className="h-12 w-full rounded-2xl border border-border/75 bg-background pl-10 pr-4 text-sm text-foreground outline-none transition focus:border-accent focus:ring-4 focus:ring-accent/10"
           />
         </label>
-        <label className="flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm text-muted-foreground">
+        <label className="flex h-12 items-center gap-2 rounded-2xl border border-border/75 bg-background px-3.5 text-sm text-muted-foreground focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/10">
           <Filter size={16} />
           <span className="sr-only">Filter</span>
           <select
@@ -121,7 +122,7 @@ export function CollectionPage() {
             <option value="archived">Archived</option>
           </select>
         </label>
-        <label className="flex h-11 items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm text-muted-foreground">
+        <label className="flex h-12 items-center gap-2 rounded-2xl border border-border/75 bg-background px-3.5 text-sm text-muted-foreground focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/10">
           Sort by
           <select
             value={sort}
@@ -150,10 +151,7 @@ export function CollectionPage() {
           aria-label="Loading collection"
         >
           {Array.from({ length: 6 }, (_, index) => (
-            <div
-              key={index}
-              className="h-80 animate-pulse rounded-2xl border border-border bg-surface"
-            />
+            <Skeleton key={index} className="h-80 border border-border/60" />
           ))}
         </div>
       ) : visiblePlants.length ? (
