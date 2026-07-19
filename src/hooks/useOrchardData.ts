@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { ensureSeedData } from '../db/seed'
 import {
@@ -8,6 +8,9 @@ import {
   taskRepository,
   timelineRepository,
 } from '../db/repositories'
+import type { CreateInput, UpdateInput } from '../db/repositories'
+import type { Plant } from '../models'
+import { plantService } from '../services/PlantService'
 
 export function usePlants() {
   return useQuery({
@@ -16,7 +19,65 @@ export function usePlants() {
       await ensureSeedData()
       return plantRepository.getAll()
     },
+    throwOnError: true,
   })
+}
+
+export function usePlant(id: string | undefined) {
+  return useQuery({
+    queryKey: ['plants', id],
+    queryFn: async () => {
+      await ensureSeedData()
+      return id ? plantRepository.getById(id) : undefined
+    },
+    enabled: Boolean(id),
+    throwOnError: true,
+  })
+}
+
+export function usePlantTimeline(plantId: string | undefined) {
+  return useQuery({
+    queryKey: ['timeline', plantId],
+    queryFn: async () => {
+      await ensureSeedData()
+      return plantId ? timelineRepository.getByPlantId(plantId) : []
+    },
+    enabled: Boolean(plantId),
+    throwOnError: true,
+  })
+}
+
+export function usePlantMutations() {
+  const queryClient = useQueryClient()
+  const refresh = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['plants'] }),
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      queryClient.invalidateQueries({ queryKey: ['timeline'] }),
+    ])
+  }
+
+  const createPlant = useMutation({
+    mutationFn: (input: CreateInput<Plant>) => plantService.create(input),
+    onSuccess: refresh,
+  })
+  const updatePlant = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateInput<Plant> }) =>
+      plantService.update(id, input),
+    onSuccess: refresh,
+  })
+  const archivePlant = useMutation({
+    mutationFn: (id: string) => plantService.archive(id),
+    onSuccess: refresh,
+  })
+
+  const resetErrors = () => {
+    createPlant.reset()
+    updatePlant.reset()
+    archivePlant.reset()
+  }
+
+  return { archivePlant, createPlant, resetErrors, updatePlant }
 }
 
 export function useDashboardData() {

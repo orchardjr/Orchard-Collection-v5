@@ -1,15 +1,19 @@
 import type { BaseRecord } from './BaseRecord'
 
 export type PlantKind = 'plant' | 'animal'
-export type PlantStatus = 'thriving' | 'stable' | 'attention'
+export type PlantStatus = 'active' | 'archived'
 
 export interface Plant extends BaseRecord {
-  commonName: string
+  nickname: string
   scientificName: string
+  commonName?: string
   cultivar?: string
+  vendor?: string
   kind: PlantKind
   status: PlantStatus
-  acquiredAt: Date
+  favorite: boolean
+  purchaseDate?: Date
+  heroImageUrl?: string
   spaceId?: string
   notes?: string
 }

@@ -34,6 +34,13 @@ function DashboardLoading() {
 
 export function DashboardPage() {
   const { data, isLoading } = useDashboardData()
+  const activePercentage = data?.plants.length
+    ? Math.round(
+        (data.plants.filter((plant) => plant.status === 'active').length /
+          data.plants.length) *
+          100,
+      )
+    : 0
 
   return (
     <Page
@@ -61,9 +68,9 @@ export function DashboardPage() {
                 [data.spaces.length, 'Spaces'],
                 [data.media.length, 'Media assets'],
                 [
-                  data.plants.filter((plant) => plant.status === 'thriving')
+                  data.plants.filter((plant) => plant.status === 'active')
                     .length,
-                  'Thriving',
+                  'Active',
                 ],
               ].map(([value, label]) => (
                 <div key={label} className="rounded-xl bg-surface-muted p-4">
@@ -78,7 +85,7 @@ export function DashboardPage() {
               <div
                 className="h-full rounded-full bg-accent"
                 style={{
-                  width: `${Math.round((data.plants.filter((plant) => plant.status !== 'attention').length / data.plants.length) * 100)}%`,
+                  width: `${activePercentage}%`,
                 }}
               />
             </div>
@@ -86,10 +93,10 @@ export function DashboardPage() {
               <span>Collection health</span>
               <span>
                 {
-                  data.plants.filter((plant) => plant.status !== 'attention')
+                  data.plants.filter((plant) => plant.status === 'active')
                     .length
                 }{' '}
-                of {data.plants.length} stable or thriving
+                of {data.plants.length} active
               </span>
             </div>
           </Card>

@@ -2,6 +2,17 @@ import Dexie, { type Table } from 'dexie'
 
 import type { MediaAsset, Plant, Space, Task, TimelineEvent } from '../models'
 
+interface LegacyPlant {
+  id: string
+  commonName: string
+  scientificName: string
+  status: 'thriving' | 'stable' | 'attention' | 'active'
+  acquiredAt: Date
+  nickname?: string
+  favorite?: boolean
+  purchaseDate?: Date
+}
+
 export class OrchardDatabase extends Dexie {
   plants!: Table<Plant, string>
   timeline!: Table<TimelineEvent, string>
@@ -25,6 +36,23 @@ export class OrchardDatabase extends Dexie {
       spaces: 'id, name, type, parentId, createdAt',
       media: 'id, plantId, type, capturedAt, createdAt',
     })
+
+    this.version(3)
+      .stores({
+        plants:
+          'id, nickname, scientificName, status, favorite, purchaseDate, spaceId, createdAt',
+      })
+      .upgrade(async (transaction) => {
+        await transaction
+          .table<LegacyPlant, string>('plants')
+          .toCollection()
+          .modify((plant) => {
+            plant.nickname ??= plant.commonName
+            plant.favorite ??= false
+            plant.purchaseDate ??= plant.acquiredAt
+            plant.status = 'active'
+          })
+      })
   }
 }
 

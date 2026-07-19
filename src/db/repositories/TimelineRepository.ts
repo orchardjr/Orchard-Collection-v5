@@ -6,6 +6,14 @@ export class TimelineRepository extends BaseRepository<TimelineEvent> {
   constructor() {
     super(db.timeline)
   }
+
+  getByPlantId(plantId: string): Promise<TimelineEvent[]> {
+    return db.timeline
+      .where('plantId')
+      .equals(plantId)
+      .reverse()
+      .sortBy('occurredAt')
+  }
 }
 
 export const timelineRepository = new TimelineRepository()
