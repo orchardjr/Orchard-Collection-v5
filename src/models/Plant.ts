@@ -15,5 +15,10 @@ export interface Plant extends BaseRecord {
   purchaseDate?: Date
   heroImageUrl?: string
   spaceId?: string
+  waterIntervalDays?: number
+  fertilizerIntervalDays?: number
+  mounted?: boolean
+  mossPole?: boolean
+  careNotes?: string
   notes?: string
 }

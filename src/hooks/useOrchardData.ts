@@ -47,6 +47,18 @@ export function usePlantTimeline(plantId: string | undefined) {
   })
 }
 
+export function usePlantMedia(plantId: string | undefined) {
+  return useQuery({
+    queryKey: ['media', plantId],
+    queryFn: async () => {
+      await ensureSeedData()
+      return plantId ? mediaRepository.getByPlantId(plantId) : []
+    },
+    enabled: Boolean(plantId),
+    throwOnError: true,
+  })
+}
+
 export function usePlantMutations() {
   const queryClient = useQueryClient()
   const refresh = async () => {

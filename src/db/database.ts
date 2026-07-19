@@ -37,7 +37,12 @@ export class OrchardDatabase extends Dexie {
       media: 'id, plantId, type, capturedAt, createdAt',
     })
 
-    this.version(3)
+    this.version(3).stores({
+      plants:
+        'id, nickname, scientificName, status, favorite, purchaseDate, spaceId, createdAt',
+    })
+
+    this.version(4)
       .stores({
         plants:
           'id, nickname, scientificName, status, favorite, purchaseDate, spaceId, createdAt',

@@ -7,12 +7,12 @@ export class TimelineRepository extends BaseRepository<TimelineEvent> {
     super(db.timeline)
   }
 
-  getByPlantId(plantId: string): Promise<TimelineEvent[]> {
-    return db.timeline
+  async getByPlantId(plantId: string): Promise<TimelineEvent[]> {
+    const events = await db.timeline
       .where('plantId')
       .equals(plantId)
-      .reverse()
       .sortBy('occurredAt')
+    return events.reverse()
   }
 }
 
