@@ -16,9 +16,8 @@ import {
 } from 'react'
 
 import { Button } from '../../components/ui/Button'
-import { useObjectUrl } from '../../hooks/useObjectUrl'
 import type { MediaAsset } from '../../models'
-import { MediaThumbnail } from './MediaThumbnail'
+import { OrchardImage } from './OrchardImage'
 
 interface MediaViewerProps {
   assets: MediaAsset[]
@@ -36,7 +35,6 @@ export function MediaViewer({ assets, initialId, onClose }: MediaViewerProps) {
   const touchStart = useRef<number | undefined>(undefined)
   const dialog = useRef<HTMLDivElement>(null)
   const asset = assets[index]
-  const url = useObjectUrl(asset?.blob)
   const move = useCallback(
     (offset: number) => {
       setIndex((current) => (current + offset + assets.length) % assets.length)
@@ -150,14 +148,16 @@ export function MediaViewer({ assets, initialId, onClose }: MediaViewerProps) {
           <ChevronLeft />
         </ViewerButton>
         <div className="flex min-w-0 flex-1 items-center justify-center overflow-auto p-12">
-          {url && (
-            <img
-              src={url}
-              alt={asset.notes || asset.fileName}
-              className="max-h-full max-w-full object-contain transition-transform motion-reduce:transition-none"
-              style={{ transform: `scale(${zoom})` }}
-            />
-          )}
+          <OrchardImage
+            blob={asset.blob}
+            thumbnailBlob={asset.thumbnailBlob}
+            preferOriginal
+            alt={asset.notes || asset.fileName}
+            loading="eager"
+            className="max-h-full max-w-full"
+            imageClassName="object-contain transition-transform motion-reduce:transition-none"
+            style={{ transform: `scale(${zoom})` }}
+          />
         </div>
         <ViewerButton
           label="Next photo"
@@ -204,10 +204,12 @@ export function MediaViewer({ assets, initialId, onClose }: MediaViewerProps) {
             aria-current={itemIndex === index}
             className="shrink-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
-            <MediaThumbnail
-              asset={item}
+            <OrchardImage
+              blob={item.blob}
+              thumbnailBlob={item.thumbnailBlob}
               alt=""
-              className={`size-14 rounded-lg object-cover ${itemIndex === index ? 'ring-2 ring-white' : 'opacity-60'}`}
+              className={`size-14 rounded-lg ${itemIndex === index ? 'ring-2 ring-white' : 'opacity-60'}`}
+              imageClassName="object-cover"
             />
           </button>
         ))}

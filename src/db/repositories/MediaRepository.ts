@@ -2,6 +2,7 @@ import type { CreateInput } from './BaseRepository'
 import type { MediaAsset } from '../../models'
 import { db } from '../database'
 import { BaseRepository } from './BaseRepository'
+import { createId } from '../../lib/createId'
 
 export class MediaRepository extends BaseRepository<MediaAsset> {
   constructor() {
@@ -67,7 +68,7 @@ export class MediaRepository extends BaseRepository<MediaAsset> {
         return {
           ...input,
           isHero: heroIndexes.get(input.plantId) === index,
-          id: crypto.randomUUID(),
+          id: createId(),
           createdAt: now,
           updatedAt: now,
         } as MediaAsset

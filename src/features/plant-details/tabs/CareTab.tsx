@@ -18,7 +18,7 @@ export function CareTab({ plant }: CareTabProps) {
   return (
     <Card
       title="Care profile"
-      description="The current routine for this collection item"
+      description="The current routine for this collection item. Care editing is not available in this release."
     >
       <dl className="grid gap-3 sm:grid-cols-2">
         <PropertyField

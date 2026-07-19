@@ -6,7 +6,7 @@ import type { MediaAsset, Plant } from '../../models'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { getPlantDisplayName } from '../../lib/plants'
-import { MediaThumbnail } from '../media/MediaThumbnail'
+import { OrchardImage } from '../media/OrchardImage'
 
 interface PlantCardProps {
   plant: Plant
@@ -29,16 +29,19 @@ export function PlantCard({ media, onArchive, onEdit, plant }: PlantCardProps) {
         className="relative block aspect-[16/10] overflow-hidden bg-accent-soft"
       >
         {media ? (
-          <MediaThumbnail
-            asset={media}
+          <OrchardImage
+            blob={media.blob}
+            thumbnailBlob={media.thumbnailBlob}
             alt={`${getPlantDisplayName(plant)} hero`}
-            className="size-full object-cover transition duration-500 group-hover:scale-105 motion-reduce:transition-none"
+            className="size-full"
+            imageClassName="object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
           />
         ) : plant.heroImageUrl ? (
-          <img
+          <OrchardImage
             src={plant.heroImageUrl}
-            alt=""
-            className="size-full object-cover transition duration-500 group-hover:scale-105"
+            alt={`${getPlantDisplayName(plant)} hero`}
+            className="size-full"
+            imageClassName="object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
           />
         ) : (
           <div className="grid size-full place-items-center bg-[radial-gradient(circle_at_30%_20%,var(--surface),transparent_45%),linear-gradient(145deg,var(--accent-soft),var(--surface-muted))]">

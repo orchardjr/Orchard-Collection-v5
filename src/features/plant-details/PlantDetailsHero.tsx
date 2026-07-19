@@ -5,7 +5,7 @@ import { Badge } from '../../components/ui/Badge'
 import { getPlantDisplayName } from '../../lib/plants'
 import type { Plant } from '../../models'
 import type { MediaAsset } from '../../models'
-import { MediaThumbnail } from '../media/MediaThumbnail'
+import { OrchardImage } from '../media/OrchardImage'
 
 interface PlantDetailsHeroProps {
   plant: Plant
@@ -19,16 +19,19 @@ export function PlantDetailsHero({ hero, plant }: PlantDetailsHeroProps) {
     <section className="overflow-hidden rounded-[1.6rem] border border-border/75 bg-surface shadow-card">
       <div className="grid min-h-72 place-items-center bg-[radial-gradient(circle_at_30%_20%,var(--surface),transparent_40%),linear-gradient(145deg,var(--accent-soft),var(--surface-muted))] sm:min-h-96">
         {hero ? (
-          <MediaThumbnail
-            asset={hero}
+          <OrchardImage
+            blob={hero.blob}
+            thumbnailBlob={hero.thumbnailBlob}
             alt={`${getPlantDisplayName(plant)} hero`}
             className="size-full max-h-[520px] object-cover"
+            imageClassName="object-cover"
           />
         ) : plant.heroImageUrl ? (
-          <img
+          <OrchardImage
             src={plant.heroImageUrl}
             alt={`${getPlantDisplayName(plant)} hero`}
             className="size-full max-h-[520px] object-cover"
+            imageClassName="object-cover"
           />
         ) : (
           <div className="text-center text-accent/70">

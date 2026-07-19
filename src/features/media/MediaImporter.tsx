@@ -17,15 +17,24 @@ export function MediaImporter({ disabled, onImport }: MediaImporterProps) {
   const [dragging, setDragging] = useState(false)
   const [progress, setProgress] = useState<[number, number]>()
   const [results, setResults] = useState<MediaImportResult[]>([])
+  const [batchError, setBatchError] = useState<string>()
 
   const importFiles = async (files: File[]) => {
     if (!files.length) return
     setProgress([0, files.length])
-    const next = await onImport(files, (done, total) =>
-      setProgress([done, total]),
-    )
-    setResults(next)
-    setProgress(undefined)
+    setBatchError(undefined)
+    try {
+      const next = await onImport(files, (done, total) =>
+        setProgress([done, total]),
+      )
+      setResults(next)
+    } catch (error) {
+      setBatchError(
+        error instanceof Error ? error.message : 'Photo import failed.',
+      )
+    } finally {
+      setProgress(undefined)
+    }
   }
 
   return (
@@ -111,6 +120,11 @@ export function MediaImporter({ disabled, onImport }: MediaImporterProps) {
               </li>
             ))}
         </ul>
+      )}
+      {batchError && (
+        <p className="mt-3 text-sm text-red-600" role="alert">
+          {batchError}
+        </p>
       )}
       {results.length > 0 && (
         <ul className="sr-only" aria-label="Import results">

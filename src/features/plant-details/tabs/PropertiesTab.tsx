@@ -17,7 +17,7 @@ export function PropertiesTab({ properties }: PropertiesTabProps) {
   return (
     <Card
       title="Properties"
-      description="Flexible metadata attached to this item"
+      description="System metadata for this item. Dynamic property editing is not available in this release."
     >
       {properties.length ? (
         <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

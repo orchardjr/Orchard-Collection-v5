@@ -10,7 +10,7 @@ import {
   filterAndSortMedia,
   type MediaSort,
 } from '../features/media/mediaSelectors'
-import { MediaThumbnail } from '../features/media/MediaThumbnail'
+import { OrchardImage } from '../features/media/OrchardImage'
 import { MediaViewer } from '../features/media/MediaViewer'
 import { useAllMedia, usePlants } from '../hooks/useOrchardData'
 import { getPlantDisplayName } from '../lib/plants'
@@ -115,10 +115,12 @@ export function MediaPage() {
                   className="relative block aspect-square w-full overflow-hidden focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-accent/30"
                   aria-label={`Open ${asset.fileName} fullscreen`}
                 >
-                  <MediaThumbnail
-                    asset={asset}
+                  <OrchardImage
+                    blob={asset.blob}
+                    thumbnailBlob={asset.thumbnailBlob}
                     alt={asset.notes || asset.fileName}
-                    className="size-full object-cover transition duration-300 group-hover:scale-105 motion-reduce:transition-none"
+                    className="size-full"
+                    imageClassName="object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none"
                   />
                   {asset.isHero && (
                     <Badge variant="accent" className="absolute left-3 top-3">

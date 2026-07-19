@@ -1,6 +1,7 @@
 import type { Table, UpdateSpec } from 'dexie'
 
 import type { BaseRecord } from '../../models'
+import { createId } from '../../lib/createId'
 
 export type CreateInput<T extends BaseRecord> = Omit<
   T,
@@ -25,7 +26,7 @@ export class BaseRepository<T extends BaseRecord> {
     const now = new Date()
     const record = {
       ...input,
-      id: crypto.randomUUID(),
+      id: createId(),
       createdAt: now,
       updatedAt: now,
     } as T

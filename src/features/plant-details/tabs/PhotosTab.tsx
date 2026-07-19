@@ -5,7 +5,7 @@ import { Badge } from '../../../components/ui/Badge'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { MediaAssetEditor } from '../../media/MediaAssetEditor'
 import { MediaImporter } from '../../media/MediaImporter'
-import { MediaThumbnail } from '../../media/MediaThumbnail'
+import { OrchardImage } from '../../media/OrchardImage'
 import { MediaViewer } from '../../media/MediaViewer'
 import { useMediaMutations } from '../../../hooks/useOrchardData'
 import type { MediaAsset } from '../../../models'
@@ -22,6 +22,9 @@ export function PhotosTab({ plantId, media }: PhotosTabProps) {
   const selected = media.find((asset) => asset.id === selectedId)
   const hero = media.find((asset) => asset.isHero) ?? media[0]
   const busy = Object.values(mutations).some((mutation) => mutation.isPending)
+  const mutationError = Object.values(mutations).find(
+    (mutation) => mutation.error instanceof Error,
+  )?.error
 
   const save = async (asset: MediaAsset, notes: string, tags: string[]) => {
     await Promise.all([
@@ -38,10 +41,12 @@ export function PhotosTab({ plantId, media }: PhotosTabProps) {
           onClick={() => setViewerId(hero.id)}
           className="group relative block aspect-[16/8] w-full overflow-hidden rounded-[1.4rem] bg-accent-soft text-left focus-visible:ring-4 focus-visible:ring-accent/20"
         >
-          <MediaThumbnail
-            asset={hero}
+          <OrchardImage
+            blob={hero.blob}
+            thumbnailBlob={hero.thumbnailBlob}
             alt={`${hero.fileName}, hero photo`}
-            className="size-full object-cover transition duration-500 group-hover:scale-105 motion-reduce:transition-none"
+            className="size-full"
+            imageClassName="object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
           />
           <Badge
             variant="accent"
@@ -74,10 +79,12 @@ export function PhotosTab({ plantId, media }: PhotosTabProps) {
                 className="block aspect-square w-full overflow-hidden focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-accent/30"
                 aria-label={`Open ${asset.fileName} fullscreen`}
               >
-                <MediaThumbnail
-                  asset={asset}
+                <OrchardImage
+                  blob={asset.blob}
+                  thumbnailBlob={asset.thumbnailBlob}
                   alt={asset.notes || asset.fileName}
-                  className="size-full object-cover transition duration-300 group-hover:scale-105 motion-reduce:transition-none"
+                  className="size-full"
+                  imageClassName="object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none"
                 />
               </button>
               <button
@@ -103,22 +110,34 @@ export function PhotosTab({ plantId, media }: PhotosTabProps) {
         </div>
       )}
 
+      {mutationError instanceof Error && (
+        <p
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          role="alert"
+        >
+          {mutationError.message}
+        </p>
+      )}
+
       {selected && (
         <MediaAssetEditor
           key={selected.id}
           asset={selected}
           busy={busy}
-          onSetHero={() => void mutations.setHero.mutateAsync(selected)}
-          onFavorite={() => void mutations.toggleFavorite.mutateAsync(selected)}
-          onSave={(notes, tags) => void save(selected, notes, tags)}
+          onSetHero={() => mutations.setHero.mutate(selected)}
+          onFavorite={() => mutations.toggleFavorite.mutate(selected)}
+          onSave={(notes, tags) => {
+            void save(selected, notes, tags).catch(() => undefined)
+          }}
           onDelete={() => {
             if (
               window.confirm(
                 `Delete ${selected.fileName}? This cannot be undone.`,
               )
             ) {
-              void mutations.deleteMedia.mutateAsync(selected)
-              setSelectedId(undefined)
+              mutations.deleteMedia.mutate(selected, {
+                onSuccess: () => setSelectedId(undefined),
+              })
             }
           }}
         />

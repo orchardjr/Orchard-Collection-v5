@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { ensureSeedData } from '../seed'
 import { plantService } from '../../services/PlantService'
@@ -55,5 +55,30 @@ describe('PlantRepository', () => {
     const titles = events.map((event) => event.title)
     expect(titles).toContain('Plant created')
     expect(titles.filter((title) => title === 'Plant updated')).toHaveLength(2)
+  })
+
+  it('completes transactional writes without crypto.randomUUID', async () => {
+    const originalCrypto = globalThis.crypto
+    vi.stubGlobal('crypto', {
+      getRandomValues: originalCrypto.getRandomValues.bind(originalCrypto),
+    })
+    try {
+      const plant = await plantService.create({
+        nickname: 'Safari Fern',
+        scientificName: 'Nephrolepis safari',
+        kind: 'plant',
+        status: 'active',
+        favorite: false,
+      })
+      const updated = await plantService.update(plant.id, { favorite: true })
+      expect(updated?.favorite).toBe(true)
+      expect(
+        (await timelineRepository.getByPlantId(plant.id)).map(
+          (event) => event.title,
+        ),
+      ).toEqual(['Plant updated', 'Plant created'])
+    } finally {
+      vi.stubGlobal('crypto', originalCrypto)
+    }
   })
 })
