@@ -13,6 +13,11 @@ interface LegacyPlant {
   purchaseDate?: Date
 }
 
+interface LegacyMediaAsset {
+  id: string
+  blob?: Blob
+}
+
 export class OrchardDatabase extends Dexie {
   plants!: Table<Plant, string>
   timeline!: Table<TimelineEvent, string>
@@ -57,6 +62,20 @@ export class OrchardDatabase extends Dexie {
             plant.purchaseDate ??= plant.acquiredAt
             plant.status = 'active'
           })
+      })
+
+    this.version(5)
+      .stores({
+        plants:
+          'id, nickname, scientificName, status, favorite, purchaseDate, spaceId, heroMediaId, createdAt',
+        media:
+          'id, plantId, fingerprint, isHero, isFavorite, dateTaken, uploadedAt, updatedAt, *tags',
+      })
+      .upgrade(async (transaction) => {
+        await transaction
+          .table<LegacyMediaAsset, string>('media')
+          .filter((asset) => !(asset.blob instanceof Blob))
+          .delete()
       })
   }
 }

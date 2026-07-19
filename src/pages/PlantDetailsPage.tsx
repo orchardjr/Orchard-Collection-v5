@@ -59,7 +59,7 @@ export function PlantDetailsPage() {
     {
       id: 'hero',
       label: 'Hero image',
-      value: plant.heroImageUrl ? 'Set' : 'Not set',
+      value: plant.heroMediaId || plant.heroImageUrl ? 'Set' : 'Not set',
     },
   ]
 
@@ -73,7 +73,7 @@ export function PlantDetailsPage() {
     photos: mediaLoading ? (
       <TabLoading label="photos" />
     ) : (
-      <PhotosTab media={media} />
+      <PhotosTab plantId={plant.id} media={media} />
     ),
     care: <CareTab plant={plant} />,
     notes: (
@@ -101,7 +101,10 @@ export function PlantDetailsPage() {
         </Link>
       }
     >
-      <PlantDetailsHero plant={plant} />
+      <PlantDetailsHero
+        plant={plant}
+        hero={media.find((asset) => asset.isHero) ?? media[0]}
+      />
       <div className="mt-6">
         <PlantDetailsTabs activeTab={activeTab} onChange={setActiveTab} />
       </div>

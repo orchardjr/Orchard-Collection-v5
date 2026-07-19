@@ -2,18 +2,20 @@ import { Archive, Heart, Leaf, Pencil, PawPrint } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 
-import type { Plant } from '../../models'
+import type { MediaAsset, Plant } from '../../models'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { getPlantDisplayName } from '../../lib/plants'
+import { MediaThumbnail } from '../media/MediaThumbnail'
 
 interface PlantCardProps {
   plant: Plant
+  media?: MediaAsset
   onArchive: (plant: Plant) => void
   onEdit: (plant: Plant) => void
 }
 
-export function PlantCard({ onArchive, onEdit, plant }: PlantCardProps) {
+export function PlantCard({ media, onArchive, onEdit, plant }: PlantCardProps) {
   const Icon = plant.kind === 'animal' ? PawPrint : Leaf
 
   return (
@@ -26,7 +28,13 @@ export function PlantCard({ onArchive, onEdit, plant }: PlantCardProps) {
         to={`/collection/${plant.id}`}
         className="relative block aspect-[16/10] overflow-hidden bg-accent-soft"
       >
-        {plant.heroImageUrl ? (
+        {media ? (
+          <MediaThumbnail
+            asset={media}
+            alt={`${getPlantDisplayName(plant)} hero`}
+            className="size-full object-cover transition duration-500 group-hover:scale-105 motion-reduce:transition-none"
+          />
+        ) : plant.heroImageUrl ? (
           <img
             src={plant.heroImageUrl}
             alt=""

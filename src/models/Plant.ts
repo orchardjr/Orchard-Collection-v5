@@ -14,6 +14,7 @@ export interface Plant extends BaseRecord {
   favorite: boolean
   purchaseDate?: Date
   heroImageUrl?: string
+  heroMediaId?: string
   spaceId?: string
   waterIntervalDays?: number
   fertilizerIntervalDays?: number

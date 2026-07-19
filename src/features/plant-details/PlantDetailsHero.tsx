@@ -4,18 +4,27 @@ import { motion } from 'framer-motion'
 import { Badge } from '../../components/ui/Badge'
 import { getPlantDisplayName } from '../../lib/plants'
 import type { Plant } from '../../models'
+import type { MediaAsset } from '../../models'
+import { MediaThumbnail } from '../media/MediaThumbnail'
 
 interface PlantDetailsHeroProps {
   plant: Plant
+  hero?: MediaAsset
 }
 
-export function PlantDetailsHero({ plant }: PlantDetailsHeroProps) {
+export function PlantDetailsHero({ hero, plant }: PlantDetailsHeroProps) {
   const Icon = plant.kind === 'animal' ? PawPrint : Leaf
 
   return (
     <section className="overflow-hidden rounded-[1.6rem] border border-border/75 bg-surface shadow-card">
       <div className="grid min-h-72 place-items-center bg-[radial-gradient(circle_at_30%_20%,var(--surface),transparent_40%),linear-gradient(145deg,var(--accent-soft),var(--surface-muted))] sm:min-h-96">
-        {plant.heroImageUrl ? (
+        {hero ? (
+          <MediaThumbnail
+            asset={hero}
+            alt={`${getPlantDisplayName(plant)} hero`}
+            className="size-full max-h-[520px] object-cover"
+          />
+        ) : plant.heroImageUrl ? (
           <img
             src={plant.heroImageUrl}
             alt={`${getPlantDisplayName(plant)} hero`}

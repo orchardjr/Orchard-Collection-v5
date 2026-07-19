@@ -8,7 +8,12 @@ import { Skeleton } from '../components/ui/Skeleton'
 import type { CreateInput } from '../db/repositories'
 import { PlantCard } from '../features/plants/PlantCard'
 import { PlantFormDialog } from '../features/plants/PlantFormDialog'
-import { usePlantMutations, usePlants } from '../hooks/useOrchardData'
+import { selectPlantCardMedia } from '../features/media/mediaSelectors'
+import {
+  useAllMedia,
+  usePlantMutations,
+  usePlants,
+} from '../hooks/useOrchardData'
 import type { Plant } from '../models'
 
 type CollectionFilter = 'all' | 'favorites' | 'active' | 'archived'
@@ -16,6 +21,7 @@ type CollectionSort = 'nickname' | 'scientificName' | 'createdAt'
 
 export function CollectionPage() {
   const { data: plants = [], isLoading } = usePlants()
+  const { data: media = [], isLoading: mediaLoading } = useAllMedia()
   const { archivePlant, createPlant, resetErrors, updatePlant } =
     usePlantMutations()
   const [search, setSearch] = useState('')
@@ -145,7 +151,7 @@ export function CollectionPage() {
         </p>
       )}
 
-      {isLoading ? (
+      {isLoading || mediaLoading ? (
         <div
           className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
           aria-label="Loading collection"
@@ -160,6 +166,9 @@ export function CollectionPage() {
             <PlantCard
               key={plant.id}
               plant={plant}
+              media={selectPlantCardMedia(
+                media.filter((asset) => asset.plantId === plant.id),
+              )}
               onArchive={archive}
               onEdit={openDialog}
             />

@@ -1,4 +1,4 @@
-import type { MediaAsset, Plant, Space, Task, TimelineEvent } from '../models'
+import type { Plant, Space, Task, TimelineEvent } from '../models'
 import { db } from './database'
 
 const createdAt = new Date('2026-07-01T14:00:00.000Z')
@@ -218,21 +218,6 @@ const timeline: TimelineEvent[] = [
   },
 ]
 
-const media: MediaAsset[] = [
-  {
-    id: 'media-monstera-study',
-    plantId: 'plant-monstera-albo',
-    name: 'Monstera albo leaf study',
-    type: 'image',
-    mimeType: 'image/jpeg',
-    url: '/media/monstera-albo-leaf.jpg',
-    capturedAt: new Date('2026-07-10T15:00:00.000Z'),
-    altText: 'Variegated leaf of a Monstera albo',
-    createdAt,
-    updatedAt,
-  },
-]
-
 let seedPromise: Promise<void> | undefined
 
 export function ensureSeedData(): Promise<void> {
@@ -244,20 +229,18 @@ export function ensureSeedData(): Promise<void> {
     db.spaces,
     db.media,
     async () => {
-      const [plantCount, timelineCount, taskCount, spaceCount, mediaCount] =
+      const [plantCount, timelineCount, taskCount, spaceCount] =
         await Promise.all([
           db.plants.count(),
           db.timeline.count(),
           db.tasks.count(),
           db.spaces.count(),
-          db.media.count(),
         ])
 
       if (spaceCount === 0) await db.spaces.bulkAdd(spaces)
       if (plantCount === 0) await db.plants.bulkAdd(plants)
       if (taskCount === 0) await db.tasks.bulkAdd(tasks)
       if (timelineCount === 0) await db.timeline.bulkAdd(timeline)
-      if (mediaCount === 0) await db.media.bulkAdd(media)
     },
   )
 

@@ -9,7 +9,8 @@ import {
   timelineRepository,
 } from '../db/repositories'
 import type { CreateInput, UpdateInput } from '../db/repositories'
-import type { Plant } from '../models'
+import type { MediaAsset, Plant } from '../models'
+import { mediaService } from '../services/MediaService'
 import { plantService } from '../services/PlantService'
 
 export function usePlants() {
@@ -57,6 +58,74 @@ export function usePlantMedia(plantId: string | undefined) {
     enabled: Boolean(plantId),
     throwOnError: true,
   })
+}
+
+export function useAllMedia() {
+  return useQuery({
+    queryKey: ['media'],
+    queryFn: async () => {
+      await ensureSeedData()
+      return mediaRepository.getAll()
+    },
+    throwOnError: true,
+  })
+}
+
+export function useMediaMutations() {
+  const queryClient = useQueryClient()
+  const refresh = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['media'] }),
+      queryClient.invalidateQueries({ queryKey: ['plants'] }),
+      queryClient.invalidateQueries({ queryKey: ['timeline'] }),
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+    ])
+  }
+  const importMedia = useMutation({
+    mutationFn: ({
+      plantId,
+      files,
+      onProgress,
+    }: {
+      plantId: string
+      files: File[]
+      onProgress?: (done: number, total: number) => void
+    }) =>
+      mediaService.importFiles(plantId, files, (progress) =>
+        onProgress?.(progress.completed, progress.total),
+      ),
+    onSuccess: refresh,
+  })
+  const setHero = useMutation({
+    mutationFn: (asset: MediaAsset) => mediaService.setHero(asset),
+    onSuccess: refresh,
+  })
+  const toggleFavorite = useMutation({
+    mutationFn: (asset: MediaAsset) => mediaService.toggleFavorite(asset),
+    onSuccess: refresh,
+  })
+  const deleteMedia = useMutation({
+    mutationFn: (asset: MediaAsset) => mediaService.delete(asset),
+    onSuccess: refresh,
+  })
+  const updateNotes = useMutation({
+    mutationFn: ({ asset, notes }: { asset: MediaAsset; notes: string }) =>
+      mediaService.updateNotes(asset, notes),
+    onSuccess: refresh,
+  })
+  const updateTags = useMutation({
+    mutationFn: ({ asset, tags }: { asset: MediaAsset; tags: string[] }) =>
+      mediaService.updateTags(asset, tags),
+    onSuccess: refresh,
+  })
+  return {
+    deleteMedia,
+    importMedia,
+    setHero,
+    toggleFavorite,
+    updateNotes,
+    updateTags,
+  }
 }
 
 export function usePlantMutations() {

@@ -72,7 +72,14 @@ export function App() {
             }
           />
           <Route path="spaces" element={<SpacesPage />} />
-          <Route path="media" element={<MediaPage />} />
+          <Route
+            path="media"
+            element={
+              <RepositoryErrorBoundary>
+                <MediaPage />
+              </RepositoryErrorBoundary>
+            }
+          />
           <Route path="timeline" element={<TimelinePage />} />
           <Route path="tasks" element={<TasksPage />} />
           <Route path="label-studio" element={<LabelStudioPage />} />

@@ -3,6 +3,7 @@ import {
   Leaf,
   MapPin,
   NotebookPen,
+  Image,
   ShoppingBag,
   type LucideIcon,
 } from 'lucide-react'
@@ -17,6 +18,7 @@ const eventPresentation: Record<
   acquired: { icon: ShoppingBag, label: 'Acquired' },
   care: { icon: Droplets, label: 'Care' },
   growth: { icon: Leaf, label: 'Growth' },
+  media: { icon: Image, label: 'Media' },
   note: { icon: NotebookPen, label: 'Note' },
   moved: { icon: MapPin, label: 'Moved' },
 }
