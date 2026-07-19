@@ -18,9 +18,7 @@ describe('App', () => {
     )
 
     expect(
-      screen.getByRole('heading', {
-        name: /keep the things worth remembering/i,
-      }),
+      screen.getByRole('heading', { name: 'Dashboard' }),
     ).toBeInTheDocument()
   })
 })

@@ -1,16 +1,16 @@
 import { Link } from 'react-router-dom'
 
+import { Page } from '../components/ui/Page'
+
 export function NotFoundPage() {
   return (
-    <section className="py-20">
-      <p className="text-lime-300">404</p>
-      <h1 className="mt-2 text-4xl font-semibold">This path is overgrown.</h1>
+    <Page title="Page not found" subtitle="This path is a little overgrown.">
       <Link
-        className="mt-6 inline-block text-stone-400 underline hover:text-white"
+        className="font-semibold text-accent hover:text-accent-strong"
         to="/"
       >
-        Return home
+        Return to the dashboard
       </Link>
-    </section>
+    </Page>
   )
 }

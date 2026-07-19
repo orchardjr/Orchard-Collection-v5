@@ -1,46 +1,49 @@
-import { Apple, Library } from 'lucide-react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { X } from 'lucide-react'
+import { Outlet } from 'react-router-dom'
 
-const navigation = [
-  { to: '/', label: 'Home', icon: Apple },
-  { to: '/collection', label: 'Collection', icon: Library },
-]
+import { useTheme } from '../../hooks/useTheme'
+import { useUiStore } from '../../stores/uiStore'
+import { Button } from '../ui/Button'
+import { BottomNavigation } from './BottomNavigation'
+import { Sidebar } from './Sidebar'
+import { TopBar } from './TopBar'
 
 export function AppLayout() {
+  const drawerOpen = useUiStore((state) => state.drawerOpen)
+  const closeDrawer = useUiStore((state) => state.closeDrawer)
+  useTheme()
+
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100">
-      <header className="border-b border-white/10">
-        <nav
-          className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4"
-          aria-label="Main navigation"
-        >
-          <NavLink to="/" className="font-semibold tracking-tight">
-            Orchard Collection
-          </NavLink>
-          <div className="flex gap-2">
-            {navigation.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={to === '/'}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 rounded-full px-3 py-2 text-sm transition ${
-                    isActive
-                      ? 'bg-lime-300 text-stone-950'
-                      : 'text-stone-400 hover:text-white'
-                  }`
-                }
-              >
-                <Icon aria-hidden="true" size={16} />
-                {label}
-              </NavLink>
-            ))}
+    <div className="flex min-h-screen bg-background text-foreground">
+      <Sidebar />
+      <div className="min-w-0 flex-1">
+        <TopBar />
+        <main className="min-h-[calc(100vh-4rem)] pb-24 lg:pb-0">
+          <Outlet />
+        </main>
+      </div>
+      <BottomNavigation />
+
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            className="absolute inset-0 bg-overlay backdrop-blur-sm"
+            onClick={closeDrawer}
+            aria-label="Close navigation"
+          />
+          <div className="relative h-full w-[280px] max-w-[85vw] shadow-2xl">
+            <Sidebar drawer onNavigate={closeDrawer} />
+            <Button
+              variant="ghost"
+              className="absolute right-3 top-4 size-10 px-0"
+              onClick={closeDrawer}
+              aria-label="Close navigation"
+            >
+              <X size={20} />
+            </Button>
           </div>
-        </nav>
-      </header>
-      <main className="mx-auto max-w-6xl px-6 py-16">
-        <Outlet />
-      </main>
+        </div>
+      )}
     </div>
   )
 }
