@@ -2,5 +2,11 @@ export type { BaseRecord } from './BaseRecord'
 export type { MediaAsset, MediaAssetType } from './MediaAsset'
 export type { Plant, PlantKind, PlantStatus } from './Plant'
 export type { Space, SpaceType } from './Space'
-export type { Task, TaskPriority, TaskStatus } from './Task'
+export type {
+  Task,
+  TaskPriority,
+  TaskStatus,
+  TaskType,
+  TaskRecurrence,
+} from './Task'
 export type { TimelineEvent, TimelineEventType } from './TimelineEvent'

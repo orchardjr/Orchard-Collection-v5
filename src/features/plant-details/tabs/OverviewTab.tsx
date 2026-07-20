@@ -4,6 +4,7 @@ import type { Plant } from '../../../models'
 
 interface OverviewTabProps {
   plant: Plant
+  spaceName?: string
 }
 
 function formatDate(date?: Date) {
@@ -12,13 +13,14 @@ function formatDate(date?: Date) {
     : '—'
 }
 
-export function OverviewTab({ plant }: OverviewTabProps) {
+export function OverviewTab({ plant, spaceName }: OverviewTabProps) {
   const properties = [
     { label: 'Nickname', value: plant.nickname },
     { label: 'Scientific name', value: plant.scientificName },
     { label: 'Common name', value: plant.commonName },
     { label: 'Cultivar', value: plant.cultivar },
     { label: 'Vendor', value: plant.vendor },
+    { label: 'Space', value: spaceName ?? 'Unassigned' },
     { label: 'Purchase date', value: formatDate(plant.purchaseDate) },
     {
       label: 'Status',

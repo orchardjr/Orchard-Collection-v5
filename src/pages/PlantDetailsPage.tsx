@@ -14,6 +14,7 @@ import {
   type DynamicProperty,
 } from '../features/plant-details/tabs/PropertiesTab'
 import { TimelineTab } from '../features/plant-details/tabs/TimelineTab'
+import { TasksTab } from '../features/plant-details/tabs/TasksTab'
 import { PlantDetailsHero } from '../features/plant-details/PlantDetailsHero'
 import {
   PlantDetailsTabs,
@@ -24,6 +25,9 @@ import {
   usePlantMedia,
   usePlantMutations,
   usePlantTimeline,
+  usePlants,
+  useSpaces,
+  useTasks,
 } from '../hooks/useOrchardData'
 
 export function PlantDetailsPage() {
@@ -33,6 +37,9 @@ export function PlantDetailsPage() {
     usePlantTimeline(plantId)
   const { data: media = [], isLoading: mediaLoading } = usePlantMedia(plantId)
   const { updatePlant } = usePlantMutations()
+  const { data: spaces = [] } = useSpaces()
+  const { data: tasks = [] } = useTasks()
+  const { data: plants = [] } = usePlants()
   const [activeTab, setActiveTab] = useState<PlantDetailsTabId>('overview')
 
   if (isLoading) return <PlantDetailsLoading />
@@ -64,11 +71,24 @@ export function PlantDetailsPage() {
   ]
 
   const content: Record<PlantDetailsTabId, ReactNode> = {
-    overview: <OverviewTab plant={plant} />,
+    overview: (
+      <OverviewTab
+        plant={plant}
+        spaceName={spaces.find((space) => space.id === plant.spaceId)?.name}
+      />
+    ),
     timeline: timelineLoading ? (
       <TabLoading label="timeline" />
     ) : (
       <TimelineTab events={timeline} />
+    ),
+    tasks: (
+      <TasksTab
+        plant={plant}
+        tasks={tasks.filter((task) => task.plantId === plant.id)}
+        plants={plants}
+        spaces={spaces}
+      />
     ),
     photos: mediaLoading ? (
       <TabLoading label="photos" />

@@ -54,7 +54,8 @@ describe('PlantRepository', () => {
     expect(archived?.status).toBe('archived')
     const titles = events.map((event) => event.title)
     expect(titles).toContain('Plant created')
-    expect(titles.filter((title) => title === 'Plant updated')).toHaveLength(2)
+    expect(titles).toContain('Plant updated')
+    expect(titles).toContain('Plant archived')
   })
 
   it('completes transactional writes without crypto.randomUUID', async () => {

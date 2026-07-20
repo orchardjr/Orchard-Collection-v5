@@ -18,9 +18,10 @@ import { Skeleton } from '../components/ui/Skeleton'
 import { StatCard } from '../components/ui/StatCard'
 import { useDashboardData } from '../hooks/useOrchardData'
 import type { Task } from '../models'
+import { Link } from 'react-router-dom'
 
 function formatTaskTime(task: Task) {
-  if (task.status === 'completed') return 'Completed'
+  if (task.status !== 'open') return task.status
   if (!task.dueAt) return 'No due time'
   return new Intl.DateTimeFormat(undefined, {
     hour: 'numeric',
@@ -54,6 +55,15 @@ export function DashboardPage() {
           100,
       )
     : 0
+  const now = new Date()
+  const actionable = data?.tasks.filter((task) => task.status === 'open') ?? []
+  const overdue = actionable.filter(
+    (task) => task.dueAt && task.dueAt < now,
+  ).length
+  const today = actionable.filter(
+    (task) => task.dueAt?.toDateString() === now.toDateString(),
+  ).length
+  const upcoming = actionable.length - overdue - today
 
   return (
     <Page
@@ -64,11 +74,15 @@ export function DashboardPage() {
           title="Welcome back to Orchard Collection."
           subtitle={
             data
-              ? `${data.plants.filter((plant) => plant.status === 'active').length} living plants · ${data.spaces.length} spaces · ${data.tasks.filter((task) => task.status !== 'completed').length} tasks today`
+              ? `${data.plants.filter((plant) => plant.status === 'active').length} living plants · ${data.spaces.filter((space) => !space.archivedAt).length} spaces · ${today} tasks today`
               : 'Your collection is waking up.'
           }
           actions={
-            <Button>
+            <Button
+              onClick={() => {
+                window.location.href = '/collection'
+              }}
+            >
               <Plus size={17} />
               Add item
             </Button>
@@ -132,16 +146,22 @@ export function DashboardPage() {
 
           <Card
             title="Today's Tasks"
-            description={`${data.tasks.length} items in your list`}
+            description={`${overdue} overdue · ${today} today · ${upcoming} upcoming`}
             action={
-              <Button variant="ghost" className="px-2">
+              <Button
+                variant="ghost"
+                className="px-2"
+                onClick={() => {
+                  window.location.href = '/tasks'
+                }}
+              >
                 View all <ArrowRight size={15} />
               </Button>
             }
             className="xl:col-span-5"
           >
             <div className="space-y-1">
-              {data.tasks.slice(0, 3).map((task) => (
+              {actionable.slice(0, 3).map((task) => (
                 <div
                   key={task.id}
                   className="flex items-center gap-3 rounded-xl px-2 py-3 hover:bg-surface-muted"
@@ -202,21 +222,21 @@ export function DashboardPage() {
           >
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: 'Add item', icon: Plus },
-                { label: 'Import media', icon: ImagePlus },
-                { label: 'Create labels', icon: Tags },
-                { label: 'Browse all', icon: Library },
-              ].map(({ icon: Icon, label }) => (
-                <button
+                { label: 'Add item', icon: Plus, href: '/collection' },
+                { label: 'Import media', icon: ImagePlus, href: '/media' },
+                { label: 'Create task', icon: Tags, href: '/tasks' },
+                { label: 'Browse all', icon: Library, href: '/collection' },
+              ].map(({ icon: Icon, label, href }) => (
+                <Link
                   key={label}
-                  type="button"
+                  to={href}
                   className="rounded-xl border border-border bg-background p-4 text-left transition hover:border-accent hover:bg-accent-soft"
                 >
                   <Icon size={20} className="text-accent" />
                   <span className="mt-3 block text-sm font-semibold text-foreground">
                     {label}
                   </span>
-                </button>
+                </Link>
               ))}
             </div>
           </Card>

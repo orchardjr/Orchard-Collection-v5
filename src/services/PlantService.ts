@@ -24,14 +24,25 @@ export class PlantService {
     input: UpdateInput<Plant>,
   ): Promise<Plant | undefined> {
     return db.transaction('rw', db.plants, db.timeline, async () => {
+      const previous = await plantRepository.getById(id)
       const plant = await plantRepository.update(id, input)
       if (plant) {
+        const moved =
+          Object.prototype.hasOwnProperty.call(input, 'spaceId') &&
+          input.spaceId !== previous?.spaceId
         await timelineRepository.create({
           plantId: plant.id,
-          title: 'Plant updated',
-          description: `${getPlantDisplayName(plant)} was updated.`,
-          eventType: 'note',
+          title: moved
+            ? 'Space changed'
+            : input.status === 'archived'
+              ? 'Plant archived'
+              : 'Plant updated',
+          description: moved
+            ? `${getPlantDisplayName(plant)} moved to a different space.`
+            : `${getPlantDisplayName(plant)} was updated.`,
+          eventType: moved ? 'moved' : 'note',
           occurredAt: new Date(),
+          spaceId: moved ? plant.spaceId : undefined,
         })
       }
       return plant

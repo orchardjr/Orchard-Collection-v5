@@ -1,11 +1,12 @@
 import { useRef, type KeyboardEvent } from 'react'
 
 export type PlantDetailsTabId =
-  'overview' | 'timeline' | 'photos' | 'care' | 'notes' | 'properties'
+  'overview' | 'timeline' | 'tasks' | 'photos' | 'care' | 'notes' | 'properties'
 
 const tabs: Array<{ id: PlantDetailsTabId; label: string }> = [
   { id: 'overview', label: 'Overview' },
   { id: 'timeline', label: 'Timeline' },
+  { id: 'tasks', label: 'Tasks' },
   { id: 'photos', label: 'Photos' },
   { id: 'care', label: 'Care' },
   { id: 'notes', label: 'Notes' },

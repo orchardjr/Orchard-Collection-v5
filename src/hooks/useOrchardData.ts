@@ -9,9 +9,131 @@ import {
   timelineRepository,
 } from '../db/repositories'
 import type { CreateInput, UpdateInput } from '../db/repositories'
-import type { MediaAsset, Plant } from '../models'
+import type { MediaAsset, Plant, Space, Task, TimelineEvent } from '../models'
 import { mediaService } from '../services/MediaService'
 import { plantService } from '../services/PlantService'
+import { spaceService } from '../services/SpaceService'
+import { taskService } from '../services/TaskService'
+import { timelineService } from '../services/TimelineService'
+
+export function useSpaces() {
+  return useQuery({
+    queryKey: ['spaces'],
+    queryFn: async () => {
+      await ensureSeedData()
+      return spaceRepository.getAll()
+    },
+    throwOnError: true,
+  })
+}
+export function useTasks() {
+  return useQuery({
+    queryKey: ['tasks'],
+    queryFn: async () => {
+      await ensureSeedData()
+      return taskRepository.getAll()
+    },
+    throwOnError: true,
+  })
+}
+export function useTimeline() {
+  return useQuery({
+    queryKey: ['timeline'],
+    queryFn: async () => {
+      await ensureSeedData()
+      return timelineRepository.getAllNewest()
+    },
+    throwOnError: true,
+  })
+}
+
+function useRefresh(keys: string[]) {
+  const queryClient = useQueryClient()
+  return async () => {
+    await Promise.all(
+      keys.map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
+    )
+  }
+}
+
+export function useSpaceMutations() {
+  const refresh = useRefresh(['spaces', 'plants', 'dashboard'])
+  return {
+    createSpace: useMutation({
+      mutationFn: (input: CreateInput<Space>) => spaceService.create(input),
+      onSuccess: refresh,
+    }),
+    updateSpace: useMutation({
+      mutationFn: ({ id, input }: { id: string; input: UpdateInput<Space> }) =>
+        spaceService.update(id, input),
+      onSuccess: refresh,
+    }),
+    archiveSpace: useMutation({
+      mutationFn: (id: string) => spaceService.archive(id),
+      onSuccess: refresh,
+    }),
+    restoreSpace: useMutation({
+      mutationFn: (id: string) => spaceService.restore(id),
+      onSuccess: refresh,
+    }),
+  }
+}
+
+export function useTaskMutations() {
+  const refresh = useRefresh(['tasks', 'timeline', 'dashboard'])
+  return {
+    createTask: useMutation({
+      mutationFn: (input: CreateInput<Task>) => taskService.create(input),
+      onSuccess: refresh,
+    }),
+    updateTask: useMutation({
+      mutationFn: ({ id, input }: { id: string; input: UpdateInput<Task> }) =>
+        taskService.update(id, input),
+      onSuccess: refresh,
+    }),
+    completeTask: useMutation({
+      mutationFn: (id: string) => taskService.complete(id),
+      onSuccess: refresh,
+    }),
+    reopenTask: useMutation({
+      mutationFn: (id: string) => taskService.reopen(id),
+      onSuccess: refresh,
+    }),
+    skipTask: useMutation({
+      mutationFn: (id: string) => taskService.skip(id),
+      onSuccess: refresh,
+    }),
+    archiveTask: useMutation({
+      mutationFn: (id: string) => taskService.archive(id),
+      onSuccess: refresh,
+    }),
+  }
+}
+
+export function useTimelineMutations() {
+  const refresh = useRefresh(['timeline', 'dashboard'])
+  return {
+    createObservation: useMutation({
+      mutationFn: (input: Omit<CreateInput<TimelineEvent>, 'isManual'>) =>
+        timelineService.createObservation(input),
+      onSuccess: refresh,
+    }),
+    updateObservation: useMutation({
+      mutationFn: ({
+        id,
+        input,
+      }: {
+        id: string
+        input: UpdateInput<TimelineEvent>
+      }) => timelineService.updateObservation(id, input),
+      onSuccess: refresh,
+    }),
+    deleteObservation: useMutation({
+      mutationFn: (id: string) => timelineService.deleteObservation(id),
+      onSuccess: refresh,
+    }),
+  }
+}
 
 export function usePlants() {
   return useQuery({

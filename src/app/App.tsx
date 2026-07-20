@@ -71,7 +71,14 @@ export function App() {
               </RepositoryErrorBoundary>
             }
           />
-          <Route path="spaces" element={<SpacesPage />} />
+          <Route
+            path="spaces"
+            element={
+              <RepositoryErrorBoundary>
+                <SpacesPage />
+              </RepositoryErrorBoundary>
+            }
+          />
           <Route
             path="media"
             element={
@@ -80,8 +87,22 @@ export function App() {
               </RepositoryErrorBoundary>
             }
           />
-          <Route path="timeline" element={<TimelinePage />} />
-          <Route path="tasks" element={<TasksPage />} />
+          <Route
+            path="timeline"
+            element={
+              <RepositoryErrorBoundary>
+                <TimelinePage />
+              </RepositoryErrorBoundary>
+            }
+          />
+          <Route
+            path="tasks"
+            element={
+              <RepositoryErrorBoundary>
+                <TasksPage />
+              </RepositoryErrorBoundary>
+            }
+          />
           <Route path="label-studio" element={<LabelStudioPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="settings" element={<SettingsPage />} />

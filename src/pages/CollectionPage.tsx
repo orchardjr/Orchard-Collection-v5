@@ -13,6 +13,7 @@ import {
   useAllMedia,
   usePlantMutations,
   usePlants,
+  useSpaces,
 } from '../hooks/useOrchardData'
 import type { Plant } from '../models'
 
@@ -22,6 +23,7 @@ type CollectionSort = 'nickname' | 'scientificName' | 'createdAt'
 export function CollectionPage() {
   const { data: plants = [], isLoading } = usePlants()
   const { data: media = [], isLoading: mediaLoading } = useAllMedia()
+  const { data: spaces = [] } = useSpaces()
   const { archivePlant, createPlant, resetErrors, updatePlant } =
     usePlantMutations()
   const [search, setSearch] = useState('')
@@ -194,6 +196,7 @@ export function CollectionPage() {
         <PlantFormDialog
           key={dialogPlant?.id ?? 'new'}
           plant={dialogPlant ?? undefined}
+          spaces={spaces}
           saving={createPlant.isPending || updatePlant.isPending}
           errorMessage={
             mutationError instanceof Error ? mutationError.message : undefined

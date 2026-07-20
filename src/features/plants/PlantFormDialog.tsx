@@ -3,8 +3,9 @@ import { motion } from 'framer-motion'
 import { useEffect, useState, type FormEvent } from 'react'
 
 import type { CreateInput } from '../../db/repositories'
-import type { Plant, PlantStatus } from '../../models'
+import type { Plant, PlantStatus, Space } from '../../models'
 import { Button } from '../../components/ui/Button'
+import { getAssignableSpaces } from '../spaces/spaceSelectors'
 
 interface PlantFormDialogProps {
   plant?: Plant
@@ -12,6 +13,7 @@ interface PlantFormDialogProps {
   errorMessage?: string
   onClose: () => void
   onSave: (input: CreateInput<Plant>) => Promise<void>
+  spaces: Space[]
 }
 
 function dateInputValue(date?: Date) {
@@ -24,6 +26,7 @@ export function PlantFormDialog({
   onSave,
   plant,
   saving,
+  spaces,
 }: PlantFormDialogProps) {
   const [nickname, setNickname] = useState(plant?.nickname ?? '')
   const [scientificName, setScientificName] = useState(
@@ -38,6 +41,7 @@ export function PlantFormDialog({
   const [notes, setNotes] = useState(plant?.notes ?? '')
   const [favorite, setFavorite] = useState(plant?.favorite ?? false)
   const [status, setStatus] = useState<PlantStatus>(plant?.status ?? 'active')
+  const [spaceId, setSpaceId] = useState(plant?.spaceId ?? '')
   const [validationError, setValidationError] = useState('')
 
   useEffect(() => {
@@ -69,7 +73,7 @@ export function PlantFormDialog({
         status,
         kind: plant?.kind ?? 'plant',
         heroImageUrl: plant?.heroImageUrl,
-        spaceId: plant?.spaceId,
+        spaceId: spaceId || undefined,
       })
     } catch {
       // The mutation exposes its error through errorMessage without closing the dialog.
@@ -203,6 +207,22 @@ export function PlantFormDialog({
               className="size-4 accent-accent"
             />
             Mark as favorite
+          </label>
+          <label className="text-sm font-medium text-foreground sm:col-span-2">
+            Space
+            <select
+              value={spaceId}
+              onChange={(event) => setSpaceId(event.target.value)}
+              className={fieldClass}
+            >
+              <option value="">Unassigned</option>
+              {getAssignableSpaces(spaces, plant?.spaceId).map((space) => (
+                <option key={space.id} value={space.id}>
+                  {space.name}
+                  {space.archivedAt ? ' (archived)' : ''}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="text-sm font-medium text-foreground sm:col-span-2">
             Notes

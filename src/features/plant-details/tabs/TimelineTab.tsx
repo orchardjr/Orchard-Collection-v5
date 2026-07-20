@@ -3,6 +3,8 @@ import {
   Leaf,
   MapPin,
   NotebookPen,
+  ListTodo,
+  Eye,
   Image,
   ShoppingBag,
   type LucideIcon,
@@ -19,6 +21,8 @@ const eventPresentation: Record<
   care: { icon: Droplets, label: 'Care' },
   growth: { icon: Leaf, label: 'Growth' },
   media: { icon: Image, label: 'Media' },
+  task: { icon: ListTodo, label: 'Task' },
+  observation: { icon: Eye, label: 'Observation' },
   note: { icon: NotebookPen, label: 'Note' },
   moved: { icon: MapPin, label: 'Moved' },
 }

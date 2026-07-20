@@ -17,6 +17,11 @@ interface LegacyMediaAsset {
   id: string
   blob?: Blob
 }
+interface LegacyTask extends Omit<Task, 'status' | 'priority' | 'type'> {
+  status: string
+  priority: string
+  type?: Task['type']
+}
 
 export class OrchardDatabase extends Dexie {
   plants!: Table<Plant, string>
@@ -76,6 +81,34 @@ export class OrchardDatabase extends Dexie {
           .table<LegacyMediaAsset, string>('media')
           .filter((asset) => !(asset.blob instanceof Blob))
           .delete()
+      })
+
+    this.version(6)
+      .stores({
+        spaces: 'id, name, type, parentSpaceId, archivedAt, createdAt',
+        tasks:
+          'id, plantId, spaceId, status, type, priority, dueAt, recurrenceSourceId, archivedAt, createdAt',
+        timeline:
+          'id, plantId, spaceId, eventType, occurredAt, isManual, createdAt',
+      })
+      .upgrade(async (transaction) => {
+        await transaction
+          .table<Space & { parentId?: string }, string>('spaces')
+          .toCollection()
+          .modify((space) => {
+            space.parentSpaceId ??= space.parentId
+            delete space.parentId
+          })
+        await transaction
+          .table<LegacyTask, string>('tasks')
+          .toCollection()
+          .modify((task) => {
+            task.status = task.status === 'completed' ? 'completed' : 'open'
+            task.priority =
+              task.priority === 'medium' ? 'normal' : task.priority
+            task.type ??= 'custom'
+            task.recurrence ??= 'none'
+          })
       })
   }
 }
