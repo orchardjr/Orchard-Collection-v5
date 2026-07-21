@@ -49,7 +49,7 @@ describe('DYMO print preview', () => {
       /\.dymo-print-root,\s*\.dymo-label\s*{[\s\S]*?width:\s*4in;[\s\S]*?height:\s*2\.11in;/,
     )
     expect(css).toMatch(/\.dymo-label-qr\s*{[\s\S]*?width:\s*0\.92in;/)
-    expect(css).toMatch(/padding:\s*0\.22in 0\.15in 0\.12in;/)
+    expect(css).toMatch(/padding:\s*0\.22in 0\.15in 0\.12in 0\.32in;/)
     expect(css).toMatch(/overflow:\s*hidden;/)
     expect(css).toMatch(/page-break-after:\s*avoid;/)
   })
