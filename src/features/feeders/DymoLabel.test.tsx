@@ -34,6 +34,8 @@ describe('DYMO print preview', () => {
 
     expect(container.querySelectorAll('.dymo-label')).toHaveLength(1)
     expect(container.querySelectorAll('.dymo-print-root')).toHaveLength(1)
+    expect(screen.getByRole('heading', { name: 'DSC-001' })).toBeVisible()
+    expect(screen.queryByText(/Orchard Chameleons/)).not.toBeInTheDocument()
     expect(
       screen.getByRole('img', { name: /QR code/ }).closest('.dymo-label-qr'),
     ).not.toBeNull()
@@ -47,6 +49,7 @@ describe('DYMO print preview', () => {
       /\.dymo-print-root,\s*\.dymo-label\s*{[\s\S]*?width:\s*4in;[\s\S]*?height:\s*2\.11in;/,
     )
     expect(css).toMatch(/\.dymo-label-qr\s*{[\s\S]*?width:\s*0\.92in;/)
+    expect(css).toMatch(/padding:\s*0\.22in 0\.15in 0\.12in;/)
     expect(css).toMatch(/overflow:\s*hidden;/)
     expect(css).toMatch(/page-break-after:\s*avoid;/)
   })

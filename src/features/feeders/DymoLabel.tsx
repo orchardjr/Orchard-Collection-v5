@@ -19,12 +19,6 @@ function labelCode(record: DymoRecord) {
   return record.inventoryId
 }
 
-function labelType(record: DymoRecord) {
-  if ('colonyId' in record) return 'Colony'
-  if ('batchId' in record) return 'Cricket batch'
-  return 'Inventory'
-}
-
 function labelDates(record: DymoRecord) {
   const formatter = new Intl.DateTimeFormat(undefined, {
     year: 'numeric',
@@ -57,9 +51,6 @@ export function DymoLabel({ record, species, onQrReady }: DymoLabelProps) {
   return (
     <article className="dymo-label" aria-label={`DYMO label for ${code}`}>
       <div className="dymo-label-copy">
-        <p className="dymo-label-kicker">
-          Orchard Chameleons · {labelType(record)}
-        </p>
         <h1>{code}</h1>
         <p className="dymo-label-species">{species}</p>
         <div className="dymo-label-dates">

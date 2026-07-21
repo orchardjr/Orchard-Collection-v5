@@ -100,7 +100,7 @@
   width: 4in;
   height: 2.11in;
   margin: 0;
-  padding: 0.15in;
+  padding: 0.22in 0.15in 0.12in;
   box-sizing: border-box;
   overflow: hidden;
   break-inside: avoid;
@@ -126,15 +126,7 @@
   color: #000;
 }
 
-.dymo-label-kicker {
-  font-size: 8pt;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
 .dymo-label h1 {
-  margin-top: 0.04in;
   overflow: hidden;
   font-size: 24pt;
   font-weight: 900;
