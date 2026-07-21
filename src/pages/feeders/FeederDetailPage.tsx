@@ -7,7 +7,6 @@ import { Card } from '../../components/ui/Card'
 import { Page } from '../../components/ui/Page'
 import { feederColonyRepository } from '../../db/repositories'
 import { FeederFormDialog } from '../../features/feeders/FeederFormDialog'
-import { FeederQrCode } from '../../features/feeders/QrCode'
 import { useFeederData, useFeederMutation } from '../../hooks/useFeederData'
 import { feederService } from '../../services/FeederService'
 
@@ -86,9 +85,20 @@ export function FeederDetailPage() {
       title={code}
       subtitle={`${species} · ${type}`}
       actions={
-        <Button variant="secondary" onClick={() => window.print()}>
-          Print DYMO label
-        </Button>
+        <div className="flex max-w-md flex-col items-start gap-2 sm:items-end">
+          <Button
+            variant="secondary"
+            onClick={() =>
+              window.location.assign(`/feeders/print/${type}/${record.id}`)
+            }
+          >
+            Print DYMO label
+          </Button>
+          <p className="text-xs leading-5 text-muted-foreground sm:text-right">
+            Printer settings: DYMO 450 Turbo, 2⅛&quot; × 4&quot; label,
+            landscape, 100% scale, margins none.
+          </p>
+        </div>
       }
     >
       <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
@@ -174,16 +184,6 @@ export function FeederDetailPage() {
             </div>
           </Card>
         </div>
-        <aside className="print-label flex flex-col items-center rounded-3xl border border-border bg-white p-5 text-black">
-          <strong>Orchard Chameleons</strong>
-          <span className="text-sm capitalize">{type}</span>
-          <span className="mt-2 text-2xl font-bold">{code}</span>
-          <span>{species}</span>
-          <div className="print-qr mt-4">
-            <FeederQrCode value={record.qrValue} />
-          </div>
-          <small className="mt-2 break-all">{record.qrValue}</small>
-        </aside>
       </div>
       {action && (
         <FeederFormDialog

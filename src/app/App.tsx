@@ -83,6 +83,10 @@ const FeederDetailPage = page(
   () => import('../pages/feeders/FeederDetailPage'),
   'FeederDetailPage',
 )
+const DymoPrintPage = page(
+  () => import('../pages/feeders/DymoPrintPage'),
+  'DymoPrintPage',
+)
 
 function RouteFallback() {
   return (
@@ -97,6 +101,7 @@ export function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
+        <Route path="feeders/print/:type/:id" element={<DymoPrintPage />} />
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
           <Route

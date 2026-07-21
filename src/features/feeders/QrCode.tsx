@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react'
 export function FeederQrCode({
   value,
   size = 160,
+  onReady,
 }: {
   value: string
   size?: number
+  onReady?: () => void
 }) {
   const [src, setSrc] = useState('')
   useEffect(() => {
@@ -29,6 +31,7 @@ export function FeederQrCode({
       height={size}
       alt={`QR code for ${value}`}
       className="rounded-lg bg-white"
+      onLoad={onReady}
     />
   ) : (
     <div
