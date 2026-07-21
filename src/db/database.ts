@@ -1,6 +1,21 @@
 import Dexie, { type Table } from 'dexie'
 
-import type { MediaAsset, Plant, Space, Task, TimelineEvent } from '../models'
+import type {
+  CricketBatch,
+  FeederColony,
+  FeederInventoryItem,
+  FeederSettings,
+  FeederSpecies,
+  FeedingLog,
+  HarvestLog,
+  InventoryTransaction,
+  MaintenanceLog,
+  MediaAsset,
+  Plant,
+  Space,
+  Task,
+  TimelineEvent,
+} from '../models'
 
 interface LegacyPlant {
   id: string
@@ -29,6 +44,15 @@ export class OrchardDatabase extends Dexie {
   tasks!: Table<Task, string>
   spaces!: Table<Space, string>
   media!: Table<MediaAsset, string>
+  feederSpecies!: Table<FeederSpecies, string>
+  feederColonies!: Table<FeederColony, string>
+  cricketBatches!: Table<CricketBatch, string>
+  feederInventory!: Table<FeederInventoryItem, string>
+  inventoryTransactions!: Table<InventoryTransaction, string>
+  maintenanceLogs!: Table<MaintenanceLog, string>
+  harvestLogs!: Table<HarvestLog, string>
+  feedingLogs!: Table<FeedingLog, string>
+  feederSettings!: Table<FeederSettings, string>
 
   constructor() {
     super('orchard-collection')
@@ -83,13 +107,30 @@ export class OrchardDatabase extends Dexie {
           .delete()
       })
 
-    this.version(6)
+    this.version(6).stores({
+      spaces: 'id, name, type, parentSpaceId, archivedAt, createdAt',
+      tasks:
+        'id, plantId, spaceId, status, type, priority, dueAt, recurrenceSourceId, archivedAt, createdAt',
+      timeline:
+        'id, plantId, spaceId, eventType, occurredAt, isManual, createdAt',
+    })
+
+    this.version(7)
       .stores({
-        spaces: 'id, name, type, parentSpaceId, archivedAt, createdAt',
-        tasks:
-          'id, plantId, spaceId, status, type, priority, dueAt, recurrenceSourceId, archivedAt, createdAt',
-        timeline:
-          'id, plantId, spaceId, eventType, occurredAt, isManual, createdAt',
+        feederSpecies: 'id, &name, active, createdAt',
+        feederColonies:
+          'id, &colonyId, speciesId, type, status, dateStarted, binId, &qrValue, archivedAt, createdAt',
+        cricketBatches:
+          'id, &batchId, parentColonyId, stage, estimatedHatchAt, binId, &qrValue, archivedAt, createdAt',
+        feederInventory:
+          'id, &inventoryId, speciesId, size, status, sourceColonyId, sourceBatchId, storageBin, &qrValue, archivedAt, createdAt',
+        inventoryTransactions: 'id, inventoryId, action, occurredAt, createdAt',
+        maintenanceLogs: 'id, colonyId, batchId, action, occurredAt, createdAt',
+        harvestLogs:
+          'id, &harvestId, colonyId, batchId, speciesId, occurredAt, destination, createdAt',
+        feedingLogs:
+          'id, animalId, inventoryId, colonyId, batchId, occurredAt, createdAt',
+        feederSettings: 'id, &key, createdAt',
       })
       .upgrade(async (transaction) => {
         await transaction

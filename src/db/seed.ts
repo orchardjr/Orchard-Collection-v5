@@ -1,4 +1,11 @@
-import type { Plant, Space, Task, TimelineEvent } from '../models'
+import type {
+  FeederSettings,
+  FeederSpecies,
+  Plant,
+  Space,
+  Task,
+  TimelineEvent,
+} from '../models'
 import { db } from './database'
 
 const createdAt = new Date('2026-07-01T14:00:00.000Z')
@@ -226,6 +233,49 @@ const timeline: TimelineEvent[] = [
 
 let seedPromise: Promise<void> | undefined
 
+const speciesNames = [
+  'Discoid Roach',
+  'House Cricket',
+  'Banded Cricket',
+  'Mealworm',
+  'Superworm',
+  'Black Soldier Fly Larva',
+  'Waxworm',
+  'Hornworm',
+  'Silkworm',
+  'Blue Bottle Fly',
+  'Fruit Fly',
+  'Isopod',
+  'Springtail',
+]
+const feederSpecies: FeederSpecies[] = speciesNames.map((name, index) => ({
+  id: `feeder-species-${index + 1}`,
+  name,
+  active: true,
+  createdAt,
+  updatedAt,
+}))
+const intervalValues: Array<[string, number, string]> = [
+  ['cricket.feeding', 1, 'Cricket feeding'],
+  ['cricket.moisture-added', 1, 'Cricket moisture'],
+  ['cricket.cleaning', 7, 'Cricket cleaning'],
+  ['discoid.feeding', 3, 'Discoid feeding'],
+  ['discoid.moisture-added', 2, 'Discoid moisture'],
+  ['discoid.cleaning', 30, 'Discoid cleaning'],
+  ['fruit-fly.replacement', 21, 'Fruit fly replacement'],
+  ['cricket.incubation', 10, 'Cricket incubation'],
+]
+const feederSettings: FeederSettings[] = intervalValues.map(
+  ([key, value, label], index) => ({
+    id: `feeder-setting-${index + 1}`,
+    key,
+    value,
+    label,
+    createdAt,
+    updatedAt,
+  }),
+)
+
 export function ensureSeedData(): Promise<void> {
   seedPromise ??= db.transaction(
     'rw',
@@ -251,4 +301,20 @@ export function ensureSeedData(): Promise<void> {
   )
 
   return seedPromise
+}
+
+let feederSeedPromise: Promise<void> | undefined
+export function ensureFeederReferenceData() {
+  feederSeedPromise ??= db.transaction(
+    'rw',
+    db.feederSpecies,
+    db.feederSettings,
+    async () => {
+      if ((await db.feederSpecies.count()) === 0)
+        await db.feederSpecies.bulkAdd(feederSpecies)
+      if ((await db.feederSettings.count()) === 0)
+        await db.feederSettings.bulkAdd(feederSettings)
+    },
+  )
+  return feederSeedPromise
 }
