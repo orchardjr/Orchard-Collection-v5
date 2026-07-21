@@ -39,12 +39,12 @@ describe('DYMO print preview', () => {
     ).not.toBeNull()
   })
 
-  it('defines one landscape 4in × 2.125in page without overflow', () => {
+  it('defines one landscape page with DYMO driver overflow tolerance', () => {
     const css = readFileSync('src/styles/index.css', 'utf8')
 
     expect(css).toMatch(/@page\s*{\s*size:\s*4in 2\.125in;\s*margin:\s*0;/)
     expect(css).toMatch(
-      /\.dymo-print-root,\s*\.dymo-label\s*{[\s\S]*?width:\s*4in;[\s\S]*?height:\s*2\.125in;/,
+      /\.dymo-print-root,\s*\.dymo-label\s*{[\s\S]*?width:\s*4in;[\s\S]*?height:\s*2\.11in;/,
     )
     expect(css).toMatch(/\.dymo-label-qr\s*{[\s\S]*?width:\s*0\.92in;/)
     expect(css).toMatch(/overflow:\s*hidden;/)
