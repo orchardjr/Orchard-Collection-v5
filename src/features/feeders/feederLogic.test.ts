@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   estimatedHatchDate,
+  feederQrUrl,
   isLowStock,
   maintenanceDueDate,
   nextRecordCode,
@@ -37,6 +38,20 @@ describe('feeder calculations', () => {
     expect(resolveQrRoute('orchard:colony:DR-B-001')).toBe(
       '/feeders/colonies/DR-B-001',
     )
+    expect(
+      resolveQrRoute(
+        'https://app.orchardcollection.ca/feeders/crickets/CR-E-001',
+      ),
+    ).toBe('/feeders/crickets/CR-E-001')
+    expect(
+      feederQrUrl(
+        'orchard:inventory:INV-001',
+        'https://app.orchardcollection.ca',
+      ),
+    ).toBe('https://app.orchardcollection.ca/feeders/inventory/INV-001')
     expect(resolveQrRoute('https://unsafe.example')).toBeUndefined()
+    expect(
+      resolveQrRoute('https://unsafe.example/feeders/settings'),
+    ).toBeUndefined()
   })
 })

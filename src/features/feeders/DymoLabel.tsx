@@ -3,6 +3,7 @@ import type {
   FeederColony,
   FeederInventoryItem,
 } from '../../models/Feeder'
+import { feederQrUrl } from './feederLogic'
 import { FeederQrCode } from './QrCode'
 
 export type DymoRecord = FeederColony | CricketBatch | FeederInventoryItem
@@ -47,6 +48,7 @@ function labelDates(record: DymoRecord) {
 
 export function DymoLabel({ record, species, onQrReady }: DymoLabelProps) {
   const code = labelCode(record)
+  const qrValue = feederQrUrl(record.qrValue, window.location.origin)
 
   return (
     <article className="dymo-label" aria-label={`DYMO label for ${code}`}>
@@ -63,7 +65,7 @@ export function DymoLabel({ record, species, onQrReady }: DymoLabelProps) {
         </p>
       </div>
       <div className="dymo-label-qr">
-        <FeederQrCode value={record.qrValue} size={192} onReady={onQrReady} />
+        <FeederQrCode value={qrValue} size={192} onReady={onQrReady} />
       </div>
     </article>
   )

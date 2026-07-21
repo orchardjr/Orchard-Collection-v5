@@ -39,6 +39,9 @@ describe('DYMO print preview', () => {
     expect(
       screen.getByRole('img', { name: /QR code/ }).closest('.dymo-label-qr'),
     ).not.toBeNull()
+    expect(screen.getByRole('img', { name: /QR code/ })).toHaveAccessibleName(
+      'QR code for http://localhost:3000/feeders/colonies/DSC-001',
+    )
   })
 
   it('defines one landscape page with DYMO driver overflow tolerance', () => {

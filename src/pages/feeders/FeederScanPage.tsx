@@ -1,10 +1,11 @@
 import { Camera, Search } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Page } from '../../components/ui/Page'
 import { resolveQrRoute } from '../../features/feeders/feederLogic'
+import { decodeQrVideoFrame } from '../../features/feeders/qrScanner'
 
 type Detector = new (options: { formats: string[] }) => {
   detect(source: HTMLVideoElement): Promise<Array<{ rawValue: string }>>
@@ -15,11 +16,16 @@ export function FeederScanPage() {
   const [scanning, setScanning] = useState(false)
   const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | undefined>(undefined)
-  useEffect(
-    () => () => streamRef.current?.getTracks().forEach((track) => track.stop()),
-    [],
-  )
+  const timerRef = useRef<number | undefined>(undefined)
+  const stopCamera = useCallback(() => {
+    if (timerRef.current !== undefined) window.clearTimeout(timerRef.current)
+    timerRef.current = undefined
+    streamRef.current?.getTracks().forEach((track) => track.stop())
+    streamRef.current = undefined
+  }, [])
+  useEffect(() => () => stopCamera(), [stopCamera])
   const lookup = (input = value) => {
     const route = resolveQrRoute(input.trim())
     if (route) navigate(route)
@@ -29,10 +35,8 @@ export function FeederScanPage() {
     setError('')
     const BarcodeDetector = (window as Window & { BarcodeDetector?: Detector })
       .BarcodeDetector
-    if (!BarcodeDetector || !navigator.mediaDevices?.getUserMedia) {
-      setError(
-        'Camera QR scanning is not supported by this browser. Use manual lookup.',
-      )
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('Camera access is not supported here. Use manual lookup.')
       return
     }
     try {
@@ -40,26 +44,43 @@ export function FeederScanPage() {
         video: { facingMode: 'environment' },
       })
       streamRef.current = stream
-      if (!videoRef.current) return
+      if (!videoRef.current) {
+        stopCamera()
+        return
+      }
       videoRef.current.srcObject = stream
       await videoRef.current.play()
       setScanning(true)
-      const detector = new BarcodeDetector({ formats: ['qr_code'] })
+      const detector = BarcodeDetector
+        ? new BarcodeDetector({ formats: ['qr_code'] })
+        : undefined
       const scan = async () => {
         if (!streamRef.current || !videoRef.current) return
-        const [result] = await detector.detect(videoRef.current)
-        if (result) {
-          const route = resolveQrRoute(result.rawValue)
+        try {
+          let rawValue: string | undefined
+          if (detector) {
+            try {
+              rawValue = (await detector.detect(videoRef.current))[0]?.rawValue
+            } catch {
+              // Fall through to the canvas decoder when the native API fails.
+            }
+          }
+          if (!rawValue && canvasRef.current)
+            rawValue = decodeQrVideoFrame(videoRef.current, canvasRef.current)
+          const route = rawValue ? resolveQrRoute(rawValue) : undefined
           if (route) {
-            stream.getTracks().forEach((track) => track.stop())
+            stopCamera()
             navigate(route)
             return
           }
+        } catch {
+          // A frame can fail while the camera is focusing; keep scanning.
         }
-        window.setTimeout(() => void scan(), 500)
+        timerRef.current = window.setTimeout(() => void scan(), 350)
       }
       void scan()
     } catch {
+      stopCamera()
       setError('Camera access was unavailable. Use manual lookup instead.')
       setScanning(false)
     }
@@ -80,6 +101,7 @@ export function FeederScanPage() {
             }
             aria-label="QR camera preview"
           />
+          <canvas ref={canvasRef} className="hidden" aria-hidden="true" />
           {!scanning && (
             <>
               <Camera size={48} className="text-muted-foreground" />
@@ -93,18 +115,22 @@ export function FeederScanPage() {
         <Button
           variant="secondary"
           className="mt-4 w-full"
-          onClick={() => void startCamera()}
-          disabled={scanning}
+          onClick={() => {
+            if (scanning) {
+              stopCamera()
+              setScanning(false)
+            } else void startCamera()
+          }}
         >
           <Camera size={18} />
-          {scanning ? 'Scanning…' : 'Start camera scanner'}
+          {scanning ? 'Stop camera scanner' : 'Start camera scanner'}
         </Button>
         <label className="mt-5 block text-sm font-semibold">
           QR identifier
           <input
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="orchard:colony:DR-B-001"
+            placeholder="https://app.orchardcollection.ca/feeders/colonies/DR-B-001"
             className="mt-2 h-12 w-full rounded-xl border border-border bg-background px-4 text-base"
           />
         </label>

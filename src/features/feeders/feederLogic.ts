@@ -70,9 +70,35 @@ export function isLowStock(quantity: number, minimum: number) {
   return quantity <= minimum
 }
 export function resolveQrRoute(value: string) {
-  if (!/^orchard:(colony|cricket|inventory):[\w-]+$/.test(value))
-    return undefined
-  const [, type, id] = value.split(':')
+  const trimmed = value.trim()
+  let type: string | undefined
+  let id: string | undefined
+
+  const legacy = /^orchard:(colony|cricket|inventory):([\w-]+)$/.exec(trimmed)
+  if (legacy) {
+    type = legacy[1]
+    id = legacy[2]
+  } else {
+    try {
+      const url = new URL(trimmed)
+      const match =
+        /^\/feeders\/(colonies|crickets|inventory)\/([\w-]+)\/?$/.exec(
+          url.pathname,
+        )
+      if (!match) return undefined
+      type =
+        match[1] === 'colonies'
+          ? 'colony'
+          : match[1] === 'crickets'
+            ? 'cricket'
+            : 'inventory'
+      id = match[2]
+    } catch {
+      return undefined
+    }
+  }
+
+  if (!type || !id) return undefined
   const segment =
     type === 'colony'
       ? 'colonies'
@@ -80,4 +106,10 @@ export function resolveQrRoute(value: string) {
         ? 'crickets'
         : 'inventory'
   return `/feeders/${segment}/${id}`
+}
+
+export function feederQrUrl(value: string, origin: string) {
+  const route = resolveQrRoute(value)
+  if (!route) throw new Error('Invalid Orchard feeder QR value.')
+  return new URL(route, origin).toString()
 }
