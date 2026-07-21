@@ -7,6 +7,7 @@ interface CardProps extends HTMLAttributes<HTMLElement> {
   title?: string
   description?: string
   action?: ReactNode
+  hover?: boolean
 }
 
 export function Card({
@@ -15,12 +16,14 @@ export function Card({
   className,
   description,
   title,
+  hover,
   ...props
 }: PropsWithChildren<CardProps>) {
   return (
     <section
       className={cn(
         'rounded-[1.4rem] border border-border/75 bg-surface p-5 shadow-card transition-[border-color,box-shadow,transform] duration-200 hover:border-border hover:shadow-card-hover sm:p-7',
+        hover && 'hover:-translate-y-0.5',
         className,
       )}
       {...props}

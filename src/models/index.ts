@@ -1,4 +1,5 @@
 export type { BaseRecord } from './BaseRecord'
+export type * from './Feeder'
 export type { MediaAsset, MediaAssetType } from './MediaAsset'
 export type { Plant, PlantKind, PlantStatus } from './Plant'
 export type { Space, SpaceType } from './Space'

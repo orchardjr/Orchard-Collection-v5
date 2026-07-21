@@ -39,6 +39,50 @@ const SettingsPage = page(() => import('../pages/SettingsPage'), 'SettingsPage')
 const SpacesPage = page(() => import('../pages/SpacesPage'), 'SpacesPage')
 const TasksPage = page(() => import('../pages/TasksPage'), 'TasksPage')
 const TimelinePage = page(() => import('../pages/TimelinePage'), 'TimelinePage')
+const FeederShell = page(
+  () => import('../features/feeders/FeederShell'),
+  'FeederShell',
+)
+const FeederDashboardPage = page(
+  () => import('../pages/feeders/FeederDashboardPage'),
+  'FeederDashboardPage',
+)
+const FeederColoniesPage = page(
+  () => import('../pages/feeders/FeederRecordsPages'),
+  'FeederColoniesPage',
+)
+const CricketBatchesPage = page(
+  () => import('../pages/feeders/FeederRecordsPages'),
+  'CricketBatchesPage',
+)
+const FeederInventoryPage = page(
+  () => import('../pages/feeders/FeederRecordsPages'),
+  'FeederInventoryPage',
+)
+const MaintenanceLogPage = page(
+  () => import('../pages/feeders/FeederLogPages'),
+  'MaintenanceLogPage',
+)
+const HarvestLogPage = page(
+  () => import('../pages/feeders/FeederLogPages'),
+  'HarvestLogPage',
+)
+const FeedingLogPage = page(
+  () => import('../pages/feeders/FeederLogPages'),
+  'FeedingLogPage',
+)
+const FeederScanPage = page(
+  () => import('../pages/feeders/FeederScanPage'),
+  'FeederScanPage',
+)
+const FeederSettingsPage = page(
+  () => import('../pages/feeders/FeederSettingsPage'),
+  'FeederSettingsPage',
+)
+const FeederDetailPage = page(
+  () => import('../pages/feeders/FeederDetailPage'),
+  'FeederDetailPage',
+)
 
 function RouteFallback() {
   return (
@@ -106,6 +150,27 @@ export function App() {
           <Route path="label-studio" element={<LabelStudioPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route
+            path="feeders"
+            element={
+              <RepositoryErrorBoundary>
+                <FeederShell />
+              </RepositoryErrorBoundary>
+            }
+          >
+            <Route index element={<FeederDashboardPage />} />
+            <Route path="colonies" element={<FeederColoniesPage />} />
+            <Route path="colonies/:id" element={<FeederDetailPage />} />
+            <Route path="crickets" element={<CricketBatchesPage />} />
+            <Route path="crickets/:id" element={<FeederDetailPage />} />
+            <Route path="inventory" element={<FeederInventoryPage />} />
+            <Route path="inventory/:id" element={<FeederDetailPage />} />
+            <Route path="maintenance" element={<MaintenanceLogPage />} />
+            <Route path="harvests" element={<HarvestLogPage />} />
+            <Route path="feedings" element={<FeedingLogPage />} />
+            <Route path="scan" element={<FeederScanPage />} />
+            <Route path="settings" element={<FeederSettingsPage />} />
+          </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

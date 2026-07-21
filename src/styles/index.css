@@ -24,6 +24,43 @@
     0 2px 4px rgb(26 46 31 / 0.05), 0 16px 44px rgb(26 46 31 / 0.08);
 }
 
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .print-label,
+  .print-label * {
+    visibility: visible !important;
+  }
+  .print-label {
+    position: fixed;
+    inset: 0;
+    width: 4in;
+    height: 2.125in;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: 0.12in !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1.25in;
+    grid-template-rows: auto auto 1fr;
+    align-content: start;
+  }
+  .print-label .print-qr {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-self: center;
+    justify-self: center;
+  }
+  .print-label img {
+    width: 1.2in !important;
+    height: 1.2in !important;
+  }
+  @page {
+    size: 4in 2.125in;
+    margin: 0;
+  }
+}
+
 :root[data-theme='dark'] {
   --background: #101612;
   --surface: #171f19;
