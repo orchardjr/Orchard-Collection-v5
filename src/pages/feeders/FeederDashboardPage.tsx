@@ -52,6 +52,18 @@ export function FeederDashboardPage() {
   const low = data.inventory.filter(
     (item) => isLowStock(item.quantity, item.minimumStock) && !item.archivedAt,
   )
+  const hatchAlerts = data.batches
+    .filter(
+      (batch) =>
+        batch.estimatedHatchAt &&
+        ['incubating', 'hatching'].includes(batch.stage),
+    )
+    .map((batch) => ({
+      batch,
+      hours:
+        (batch.estimatedHatchAt!.getTime() - now.getTime()) / (60 * 60 * 1000),
+    }))
+    .filter(({ hours }) => hours <= 48)
   const quick = [
     ['Add Colony', '/feeders/colonies?add=1', Bug],
     ['Add Cricket Batch', '/feeders/crickets?add=1', Egg],
@@ -105,7 +117,7 @@ export function FeederDashboardPage() {
             <AlertTriangle className="text-amber-500" />
             Care alerts
           </h2>
-          {due.length || low.length ? (
+          {due.length || low.length || hatchAlerts.length ? (
             <div className="mt-4 space-y-2">
               {due.map(({ colony, action, date }) => (
                 <div
@@ -124,6 +136,20 @@ export function FeederDashboardPage() {
                   <strong>{item.inventoryId} low stock</strong>
                   <p className="text-sm">
                     {item.quantity} {item.unit} remaining
+                  </p>
+                </div>
+              ))}
+              {hatchAlerts.map(({ batch, hours }) => (
+                <div
+                  key={batch.id}
+                  className={`rounded-xl p-3 ${hours < 0 ? 'bg-red-500/10' : 'bg-amber-500/10'}`}
+                >
+                  <strong>
+                    {batch.batchId}{' '}
+                    {hours < 0 ? 'hatch overdue' : 'hatch expected soon'}
+                  </strong>
+                  <p className="text-sm text-muted-foreground">
+                    Estimated {batch.estimatedHatchAt!.toLocaleString()}
                   </p>
                 </div>
               ))}

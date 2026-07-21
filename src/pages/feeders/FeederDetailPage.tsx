@@ -179,7 +179,7 @@ export function FeederDetailPage() {
           <span className="text-sm capitalize">{type}</span>
           <span className="mt-2 text-2xl font-bold">{code}</span>
           <span>{species}</span>
-          <div className="mt-4">
+          <div className="print-qr mt-4">
             <FeederQrCode value={record.qrValue} />
           </div>
           <small className="mt-2 break-all">{record.qrValue}</small>

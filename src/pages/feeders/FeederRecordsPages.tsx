@@ -1,4 +1,11 @@
-import { Plus, SlidersHorizontal } from 'lucide-react'
+import {
+  Archive,
+  ArrowRight,
+  Pencil,
+  Plus,
+  RotateCcw,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
@@ -13,6 +20,7 @@ import {
 } from '../../features/feeders/FeederFormDialog'
 import { useFeederData, useFeederMutation } from '../../hooks/useFeederData'
 import { feederService } from '../../services/FeederService'
+import type { FeederColony } from '../../models'
 
 const date = () => new Date().toISOString().slice(0, 10)
 const field = 'h-11 rounded-xl border border-border bg-background px-3'
@@ -68,9 +76,16 @@ function FilterBar({
           'incubating',
           'hatching',
           'pinheads',
+          'small',
+          'medium',
+          'large',
+          'adult',
           'available',
+          'gut-loading',
+          'reserved',
           'low-stock',
           'depleted',
+          'expired',
         ].map((v) => (
           <option key={v}>{v}</option>
         ))}
@@ -84,8 +99,29 @@ export function FeederColoniesPage() {
   const [open, setOpen] = useAddQuery()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
+  const [editing, setEditing] = useState<FeederColony>()
   const mutation = useFeederMutation(
     feederService.createColony.bind(feederService),
+  )
+  const update = useFeederMutation(
+    ({ id, values }: { id: string; values: FeederFormValues }) =>
+      feederService.updateColony(id, {
+        name: values.name,
+        speciesId: values.speciesId,
+        type: values.type as FeederColony['type'],
+        status: values.status as FeederColony['status'],
+        dateStarted: new Date(values.dateStarted),
+        binId: values.binId,
+        location: values.location || undefined,
+        estimatedPopulation: values.estimatedPopulation
+          ? Number(values.estimatedPopulation)
+          : undefined,
+        notes: values.notes || undefined,
+      }),
+  )
+  const lifecycle = useFeederMutation(
+    ({ id, reopen }: { id: string; reopen: boolean }) =>
+      reopen ? feederService.reopenColony(id) : feederService.archiveColony(id),
   )
   const data = query.data
   const rows = useMemo(
@@ -194,6 +230,33 @@ export function FeederColoniesPage() {
               >
                 Open colony →
               </Link>
+              <div className="mt-2 flex flex-wrap gap-2 border-t border-border pt-3">
+                <Button variant="ghost" onClick={() => setEditing(c)}>
+                  <Pencil size={17} /> Edit
+                </Button>
+                <Button
+                  variant={c.archivedAt ? 'secondary' : 'ghost'}
+                  onClick={() => {
+                    if (
+                      c.archivedAt ||
+                      window.confirm(
+                        `Archive ${c.name}? Its history will be preserved.`,
+                      )
+                    )
+                      void lifecycle.mutateAsync({
+                        id: c.id,
+                        reopen: Boolean(c.archivedAt),
+                      })
+                  }}
+                >
+                  {c.archivedAt ? (
+                    <RotateCcw size={17} />
+                  ) : (
+                    <Archive size={17} />
+                  )}
+                  {c.archivedAt ? 'Reopen' : 'Archive'}
+                </Button>
+              </div>
             </Card>
           ))}
         </div>
@@ -227,6 +290,24 @@ export function FeederColoniesPage() {
           }}
         />
       )}
+      {editing && (
+        <FeederFormDialog
+          title="Edit colony"
+          fields={fields.map((field) => ({
+            ...field,
+            value:
+              field.name === 'dateStarted'
+                ? editing.dateStarted.toISOString().slice(0, 10)
+                : String(editing[field.name as keyof FeederColony] ?? ''),
+          }))}
+          error={update.error?.message}
+          onClose={() => setEditing(undefined)}
+          onSave={async (values) => {
+            await update.mutateAsync({ id: editing.id, values })
+            setEditing(undefined)
+          }}
+        />
+      )}
     </Page>
   )
 }
@@ -234,16 +315,39 @@ export function FeederColoniesPage() {
 export function CricketBatchesPage() {
   const query = useFeederData()
   const [open, setOpen] = useAddQuery()
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState('')
   const mutation = useFeederMutation(
     feederService.createBatch.bind(feederService),
   )
+  const stageMutation = useFeederMutation(
+    ({ id, stage }: { id: string; stage: string }) =>
+      feederService.updateBatchStage(id, stage as never),
+  )
   const data = query.data
+  const rows = useMemo(
+    () =>
+      data?.batches.filter(
+        (batch) =>
+          (!search ||
+            `${batch.batchId} ${batch.binId}`
+              .toLowerCase()
+              .includes(search.toLowerCase())) &&
+          (!status || batch.stage === status),
+      ) ?? [],
+    [data, search, status],
+  )
   const fields: SimpleField[] = [
     {
       name: 'parentColonyId',
       label: 'Parent breeder colony',
       type: 'select',
-      options: data?.colonies.map((c) => [c.id, `${c.colonyId} · ${c.name}`]),
+      required: true,
+      options: data?.colonies
+        .filter(
+          (colony) => colony.type === 'cricket-breeder' && !colony.archivedAt,
+        )
+        .map((c) => [c.id, `${c.colonyId} · ${c.name}`]),
     },
     {
       name: 'stage',
@@ -285,11 +389,12 @@ export function CricketBatchesPage() {
         </Button>
       }
     >
+      <FilterBar {...{ search, setSearch, status, setStatus }} />
       {query.isLoading ? (
         <div className="h-64 animate-pulse rounded-3xl bg-surface-muted" />
-      ) : data?.batches.length ? (
+      ) : rows.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.batches.map((b) => (
+          {rows.map((b) => (
             <Card key={b.id}>
               <div className="flex justify-between">
                 <h2 className="text-xl font-semibold">{b.batchId}</h2>
@@ -310,6 +415,30 @@ export function CricketBatchesPage() {
               >
                 Open batch →
               </Link>
+              {!['depleted', 'failed'].includes(b.stage) && (
+                <Button
+                  className="mt-3 w-full"
+                  variant="secondary"
+                  onClick={() => {
+                    const stages = [
+                      'eggs-collected',
+                      'incubating',
+                      'hatching',
+                      'pinheads',
+                      'small',
+                      'medium',
+                      'large',
+                      'adult',
+                      'depleted',
+                    ]
+                    const next = stages[stages.indexOf(b.stage) + 1]
+                    if (next)
+                      void stageMutation.mutateAsync({ id: b.id, stage: next })
+                  }}
+                >
+                  <ArrowRight size={17} /> Advance stage
+                </Button>
+              )}
             </Card>
           ))}
         </div>
@@ -348,6 +477,8 @@ export function FeederInventoryPage() {
   const query = useFeederData()
   const [open, setOpen] = useAddQuery()
   const [adjust, setAdjust] = useState<string>()
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState('')
   const create = useFeederMutation(async (v: FeederFormValues) =>
     feederService.createInventory(
       {
@@ -363,12 +494,14 @@ export function FeederInventoryPage() {
       Number(v.quantity),
     ),
   )
-  const change = useFeederMutation(async (v: { id: string; delta: number }) =>
-    feederService.adjustInventory(
-      v.id,
-      v.delta > 0 ? 'add' : 'remove',
-      v.delta,
-    ),
+  const change = useFeederMutation(
+    async (v: {
+      id: string
+      delta: number
+      action: FeederFormValues['action']
+      notes: string
+    }) =>
+      feederService.adjustInventory(v.id, v.action as never, v.delta, v.notes),
   )
   const common: SimpleField[] = [
     {
@@ -414,6 +547,22 @@ export function FeederInventoryPage() {
     { name: 'minimumStock', label: 'Minimum stock', type: 'number', value: 0 },
     { name: 'notes', label: 'Notes', type: 'textarea' },
   ]
+  const rows = useMemo(
+    () =>
+      query.data?.inventory.filter((item) => {
+        const species = query.data.species.find(
+          (candidate) => candidate.id === item.speciesId,
+        )?.name
+        return (
+          (!search ||
+            `${item.inventoryId} ${item.storageBin} ${item.size} ${species ?? ''}`
+              .toLowerCase()
+              .includes(search.toLowerCase())) &&
+          (!status || item.status === status)
+        )
+      }) ?? [],
+    [query.data, search, status],
+  )
   return (
     <Page
       title="Feeder Inventory"
@@ -425,9 +574,10 @@ export function FeederInventoryPage() {
         </Button>
       }
     >
-      {query.data?.inventory.length ? (
+      <FilterBar {...{ search, setSearch, status, setStatus }} />
+      {rows.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {query.data.inventory.map((i) => (
+          {rows.map((i) => (
             <Card key={i.id}>
               <div className="flex justify-between">
                 <h2 className="text-xl font-semibold">{i.inventoryId}</h2>
@@ -440,7 +590,7 @@ export function FeederInventoryPage() {
                 </span>
               </p>
               <p>
-                {query.data.species.find((s) => s.id === i.speciesId)?.name} ·{' '}
+                {query.data?.species.find((s) => s.id === i.speciesId)?.name} ·{' '}
                 {i.size}
               </p>
               <div className="mt-4 flex gap-2">
@@ -481,6 +631,23 @@ export function FeederInventoryPage() {
           title="Adjust inventory"
           fields={[
             {
+              name: 'action',
+              label: 'Adjustment type',
+              type: 'select',
+              required: true,
+              value: 'count-correction',
+              options: [
+                ['add', 'Add'],
+                ['remove', 'Remove'],
+                ['feed-out', 'Feed Out'],
+                ['transfer', 'Transfer'],
+                ['harvest-in', 'Harvest In'],
+                ['mortality', 'Mortality'],
+                ['count-correction', 'Count Correction'],
+                ['disposal', 'Disposal'],
+              ],
+            },
+            {
               name: 'delta',
               label: 'Change (+ add, − remove)',
               type: 'number',
@@ -498,7 +665,12 @@ export function FeederInventoryPage() {
               !window.confirm('Apply this large inventory correction?')
             )
               return
-            await change.mutateAsync({ id: adjust, delta })
+            await change.mutateAsync({
+              id: adjust,
+              delta,
+              action: v.action,
+              notes: v.confirm,
+            })
             setAdjust(undefined)
           }}
         />

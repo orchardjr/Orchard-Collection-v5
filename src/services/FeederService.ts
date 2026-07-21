@@ -15,6 +15,7 @@ import {
   nextRecordCode,
 } from '../features/feeders/feederLogic'
 import type {
+  BatchStage,
   CricketBatch,
   FeederColony,
   FeederInventoryItem,
@@ -40,12 +41,40 @@ export class FeederService {
       })
     })
   }
+  updateColony(
+    id: string,
+    input: Partial<
+      Omit<
+        FeederColony,
+        'id' | 'colonyId' | 'qrValue' | 'createdAt' | 'updatedAt'
+      >
+    >,
+  ) {
+    return feederColonyRepository.update(id, input)
+  }
+  archiveColony(id: string) {
+    return feederColonyRepository.update(id, {
+      status: 'retired',
+      archivedAt: new Date(),
+    })
+  }
+  reopenColony(id: string) {
+    return feederColonyRepository.update(id, {
+      status: 'active',
+      archivedAt: undefined,
+    })
+  }
   async createBatch(
     input: Omit<
       CreateInput<CricketBatch>,
       'batchId' | 'qrValue' | 'estimatedHatchAt'
     > & { incubationDays?: number },
   ) {
+    if (!input.parentColonyId)
+      throw new Error('Choose a parent cricket breeder colony.')
+    const parent = await feederColonyRepository.getById(input.parentColonyId)
+    if (!parent || parent.type !== 'cricket-breeder' || parent.archivedAt)
+      throw new Error('Parent must be an active cricket breeder colony.')
     const prefix =
       input.stage === 'eggs-collected' || input.stage === 'incubating'
         ? 'CR-E'
@@ -64,6 +93,24 @@ export class FeederService {
       estimatedHatchAt: record.eggsMovedAt
         ? estimatedHatchDate(record.eggsMovedAt, incubationDays)
         : undefined,
+    })
+  }
+  async updateBatchStage(id: string, stage: BatchStage) {
+    const batch = await cricketBatchRepository.getById(id)
+    if (!batch) throw new Error('Cricket batch not found.')
+    const now = new Date()
+    return cricketBatchRepository.update(id, {
+      stage,
+      size:
+        stage === 'pinheads'
+          ? 'pinhead'
+          : ['small', 'medium', 'large', 'adult'].includes(stage)
+            ? (stage as CricketBatch['size'])
+            : batch.size,
+      firstHatchAt:
+        stage === 'hatching' && !batch.firstHatchAt ? now : batch.firstHatchAt,
+      mainHatchAt:
+        stage === 'pinheads' && !batch.mainHatchAt ? now : batch.mainHatchAt,
     })
   }
   async adjustInventory(
@@ -154,7 +201,7 @@ export class FeederService {
       db.feederInventory,
       db.inventoryTransactions,
       async () => {
-        if (input.inventoryId)
+        if (input.inventoryId && input.quantityEaten > 0)
           await this.adjustInventory(
             input.inventoryId,
             'feed-out',
@@ -168,6 +215,8 @@ export class FeederService {
   async logHarvest(input: CreateInput<HarvestLog>) {
     if (input.quantity <= 0)
       throw new Error('Harvest quantity must be positive.')
+    if (input.destination === 'inventory' && !input.inventoryId)
+      throw new Error('Choose the inventory item receiving this harvest.')
     return db.transaction(
       'rw',
       db.harvestLogs,

@@ -144,11 +144,15 @@ export function FeederFormDialog({
             {error}
           </p>
         )}
-        <div className="flex justify-end gap-2 sm:col-span-2">
-          <Button variant="ghost" onClick={onClose}>
+        <div className="sticky bottom-0 -mx-5 -mb-5 flex gap-2 border-t border-border bg-surface/95 p-4 backdrop-blur sm:col-span-2 sm:justify-end">
+          <Button
+            className="flex-1 sm:flex-none"
+            variant="ghost"
+            onClick={onClose}
+          >
             Cancel
           </Button>
-          <Button type="submit" disabled={busy}>
+          <Button className="flex-1 sm:flex-none" type="submit" disabled={busy}>
             {busy ? 'Saving…' : 'Save'}
           </Button>
         </div>
