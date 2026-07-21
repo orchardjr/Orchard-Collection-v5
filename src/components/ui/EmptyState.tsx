@@ -1,14 +1,14 @@
-import type { LucideIcon } from 'lucide-react'
+import { Inbox, type LucideIcon } from 'lucide-react'
 
 interface EmptyStateProps {
-  icon: LucideIcon
+  icon?: LucideIcon
   title: string
   description: string
 }
 
 export function EmptyState({
   description,
-  icon: Icon,
+  icon: Icon = Inbox,
   title,
 }: EmptyStateProps) {
   return (
