@@ -15,12 +15,17 @@ import { plantService } from '../services/PlantService'
 import { spaceService } from '../services/SpaceService'
 import { taskService } from '../services/TaskService'
 import { timelineService } from '../services/TimelineService'
+import { isSupabaseConfigured } from '../lib/supabase'
+
+async function prepareData() {
+  if (!isSupabaseConfigured) await ensureSeedData()
+}
 
 export function useSpaces() {
   return useQuery({
     queryKey: ['spaces'],
     queryFn: async () => {
-      await ensureSeedData()
+      await prepareData()
       return spaceRepository.getAll()
     },
     throwOnError: true,
@@ -30,7 +35,7 @@ export function useTasks() {
   return useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
-      await ensureSeedData()
+      await prepareData()
       return taskRepository.getAll()
     },
     throwOnError: true,
@@ -40,7 +45,7 @@ export function useTimeline() {
   return useQuery({
     queryKey: ['timeline'],
     queryFn: async () => {
-      await ensureSeedData()
+      await prepareData()
       return timelineRepository.getAllNewest()
     },
     throwOnError: true,
@@ -139,7 +144,7 @@ export function usePlants() {
   return useQuery({
     queryKey: ['plants'],
     queryFn: async () => {
-      await ensureSeedData()
+      await prepareData()
       return plantRepository.getAll()
     },
     throwOnError: true,
@@ -150,7 +155,7 @@ export function usePlant(id: string | undefined) {
   return useQuery({
     queryKey: ['plants', id],
     queryFn: async () => {
-      await ensureSeedData()
+      await prepareData()
       return id ? plantRepository.getById(id) : undefined
     },
     enabled: Boolean(id),
@@ -162,7 +167,7 @@ export function usePlantTimeline(plantId: string | undefined) {
   return useQuery({
     queryKey: ['timeline', plantId],
     queryFn: async () => {
-      await ensureSeedData()
+      await prepareData()
       return plantId ? timelineRepository.getByPlantId(plantId) : []
     },
     enabled: Boolean(plantId),
@@ -174,7 +179,7 @@ export function usePlantMedia(plantId: string | undefined) {
   return useQuery({
     queryKey: ['media', plantId],
     queryFn: async () => {
-      await ensureSeedData()
+      await prepareData()
       return plantId ? mediaRepository.getByPlantId(plantId) : []
     },
     enabled: Boolean(plantId),
@@ -186,7 +191,7 @@ export function useAllMedia() {
   return useQuery({
     queryKey: ['media'],
     queryFn: async () => {
-      await ensureSeedData()
+      await prepareData()
       return mediaRepository.getAll()
     },
     throwOnError: true,
@@ -287,7 +292,7 @@ export function useDashboardData() {
   return useQuery({
     queryKey: ['dashboard'],
     queryFn: async () => {
-      await ensureSeedData()
+      await prepareData()
       const [plants, tasks, timeline, spaces, media] = await Promise.all([
         plantRepository.getAll(),
         taskRepository.getAll(),

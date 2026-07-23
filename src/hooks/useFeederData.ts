@@ -1,13 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { db } from '../db/database'
 import { ensureFeederReferenceData } from '../db/seed'
+import {
+  cricketBatchRepository,
+  feederColonyRepository,
+  feederInventoryRepository,
+  feederSettingsRepository,
+  feederSpeciesRepository,
+  feedingLogRepository,
+  harvestLogRepository,
+  inventoryTransactionRepository,
+  maintenanceLogRepository,
+  plantRepository,
+} from '../db/repositories'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 export const feederKeys = { all: ['feeders'] as const }
 export function useFeederData() {
   return useQuery({
     queryKey: feederKeys.all,
     queryFn: async () => {
-      await ensureFeederReferenceData()
+      if (!isSupabaseConfigured) await ensureFeederReferenceData()
       const [
         species,
         colonies,
@@ -20,16 +32,18 @@ export function useFeederData() {
         settings,
         animals,
       ] = await Promise.all([
-        db.feederSpecies.toArray(),
-        db.feederColonies.toArray(),
-        db.cricketBatches.toArray(),
-        db.feederInventory.toArray(),
-        db.inventoryTransactions.toArray(),
-        db.maintenanceLogs.toArray(),
-        db.harvestLogs.toArray(),
-        db.feedingLogs.toArray(),
-        db.feederSettings.toArray(),
-        db.plants.filter((plant) => plant.kind === 'animal').toArray(),
+        feederSpeciesRepository.getAll(),
+        feederColonyRepository.getAll(),
+        cricketBatchRepository.getAll(),
+        feederInventoryRepository.getAll(),
+        inventoryTransactionRepository.getAll(),
+        maintenanceLogRepository.getAll(),
+        harvestLogRepository.getAll(),
+        feedingLogRepository.getAll(),
+        feederSettingsRepository.getAll(),
+        plantRepository
+          .getAll()
+          .then((plants) => plants.filter((plant) => plant.kind === 'animal')),
       ])
       return {
         species,

@@ -151,6 +151,8 @@ export function MediaViewer({ assets, initialId, onClose }: MediaViewerProps) {
           <OrchardImage
             blob={asset.blob}
             thumbnailBlob={asset.thumbnailBlob}
+            src={asset.signedUrl}
+            thumbnailSrc={asset.thumbnailUrl}
             preferOriginal
             alt={asset.notes || asset.fileName}
             loading="eager"
@@ -207,6 +209,8 @@ export function MediaViewer({ assets, initialId, onClose }: MediaViewerProps) {
             <OrchardImage
               blob={item.blob}
               thumbnailBlob={item.thumbnailBlob}
+              src={item.signedUrl}
+              thumbnailSrc={item.thumbnailUrl}
               alt=""
               className={`size-14 rounded-lg ${itemIndex === index ? 'ring-2 ring-white' : 'opacity-60'}`}
               imageClassName="object-cover"

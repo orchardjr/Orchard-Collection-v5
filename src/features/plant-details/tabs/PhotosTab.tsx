@@ -44,6 +44,8 @@ export function PhotosTab({ plantId, media }: PhotosTabProps) {
           <OrchardImage
             blob={hero.blob}
             thumbnailBlob={hero.thumbnailBlob}
+            src={hero.signedUrl}
+            thumbnailSrc={hero.thumbnailUrl}
             alt={`${hero.fileName}, hero photo`}
             className="size-full"
             imageClassName="object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
@@ -82,6 +84,8 @@ export function PhotosTab({ plantId, media }: PhotosTabProps) {
                 <OrchardImage
                   blob={asset.blob}
                   thumbnailBlob={asset.thumbnailBlob}
+                  src={asset.signedUrl}
+                  thumbnailSrc={asset.thumbnailUrl}
                   alt={asset.notes || asset.fileName}
                   className="size-full"
                   imageClassName="object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none"

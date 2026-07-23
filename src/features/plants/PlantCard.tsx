@@ -32,6 +32,8 @@ export function PlantCard({ media, onArchive, onEdit, plant }: PlantCardProps) {
           <OrchardImage
             blob={media.blob}
             thumbnailBlob={media.thumbnailBlob}
+            src={media.signedUrl}
+            thumbnailSrc={media.thumbnailUrl}
             alt={`${getPlantDisplayName(plant)} hero`}
             className="size-full"
             imageClassName="object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"

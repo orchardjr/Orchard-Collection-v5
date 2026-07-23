@@ -118,6 +118,8 @@ export function MediaPage() {
                   <OrchardImage
                     blob={asset.blob}
                     thumbnailBlob={asset.thumbnailBlob}
+                    src={asset.signedUrl}
+                    thumbnailSrc={asset.thumbnailUrl}
                     alt={asset.notes || asset.fileName}
                     className="size-full"
                     imageClassName="object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none"

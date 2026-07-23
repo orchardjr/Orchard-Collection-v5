@@ -2,6 +2,7 @@ import { db } from '../db/database'
 import type { CreateInput, UpdateInput } from '../db/repositories'
 import { taskRepository, timelineRepository } from '../db/repositories'
 import type { Task } from '../models'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 export function nextDueDate(task: Task): Date | undefined {
   if (!task.dueAt || !task.recurrence || task.recurrence === 'none')
@@ -19,11 +20,14 @@ export function nextDueDate(task: Task): Date | undefined {
 
 export class TaskService {
   async create(input: CreateInput<Task>) {
-    return db.transaction('rw', db.tasks, db.timeline, async () => {
+    const operation = async () => {
       const task = await taskRepository.create(input)
       if (task.plantId) await this.event(task, 'Task created')
       return task
-    })
+    }
+    return isSupabaseConfigured
+      ? operation()
+      : db.transaction('rw', db.tasks, db.timeline, operation)
   }
 
   update(id: string, input: UpdateInput<Task>) {
@@ -31,7 +35,7 @@ export class TaskService {
   }
 
   async complete(id: string) {
-    return db.transaction('rw', db.tasks, db.timeline, async () => {
+    const operation = async () => {
       const task = await taskRepository.getById(id)
       if (!task) return undefined
       const completed = await taskRepository.update(id, {
@@ -40,10 +44,9 @@ export class TaskService {
       })
       const nextDue = nextDueDate(task)
       if (nextDue) {
-        const duplicate = await db.tasks
-          .where('recurrenceSourceId')
-          .equals(task.id)
-          .first()
+        const duplicate = (await taskRepository.getAll()).find(
+          (candidate) => candidate.recurrenceSourceId === task.id,
+        )
         if (!duplicate)
           await taskRepository.create({
             ...this.copy(task),
@@ -54,7 +57,10 @@ export class TaskService {
       }
       if (completed?.plantId) await this.event(completed, 'Task completed')
       return completed
-    })
+    }
+    return isSupabaseConfigured
+      ? operation()
+      : db.transaction('rw', db.tasks, db.timeline, operation)
   }
 
   async reopen(id: string) {
@@ -71,14 +77,17 @@ export class TaskService {
   }
 
   private async status(id: string, status: Task['status'], title: string) {
-    return db.transaction('rw', db.tasks, db.timeline, async () => {
+    const operation = async () => {
       const task = await taskRepository.update(id, {
         status,
         completedAt: undefined,
       })
       if (task?.plantId) await this.event(task, title)
       return task
-    })
+    }
+    return isSupabaseConfigured
+      ? operation()
+      : db.transaction('rw', db.tasks, db.timeline, operation)
   }
 
   private copy(task: Task): CreateInput<Task> {

@@ -3,10 +3,11 @@ import type { CreateInput, UpdateInput } from '../db/repositories'
 import { plantRepository, timelineRepository } from '../db/repositories'
 import { getPlantDisplayName } from '../lib/plants'
 import type { Plant } from '../models'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 export class PlantService {
   async create(input: CreateInput<Plant>): Promise<Plant> {
-    return db.transaction('rw', db.plants, db.timeline, async () => {
+    const operation = async () => {
       const plant = await plantRepository.create(input)
       await timelineRepository.create({
         plantId: plant.id,
@@ -16,14 +17,17 @@ export class PlantService {
         occurredAt: new Date(),
       })
       return plant
-    })
+    }
+    return isSupabaseConfigured
+      ? operation()
+      : db.transaction('rw', db.plants, db.timeline, operation)
   }
 
   async update(
     id: string,
     input: UpdateInput<Plant>,
   ): Promise<Plant | undefined> {
-    return db.transaction('rw', db.plants, db.timeline, async () => {
+    const operation = async () => {
       const previous = await plantRepository.getById(id)
       const plant = await plantRepository.update(id, input)
       if (plant) {
@@ -46,7 +50,10 @@ export class PlantService {
         })
       }
       return plant
-    })
+    }
+    return isSupabaseConfigured
+      ? operation()
+      : db.transaction('rw', db.plants, db.timeline, operation)
   }
 
   archive(id: string): Promise<Plant | undefined> {

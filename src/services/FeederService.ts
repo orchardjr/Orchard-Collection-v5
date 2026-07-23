@@ -24,15 +24,25 @@ import type {
   InventoryAction,
   MaintenanceLog,
 } from '../models'
+import { isSupabaseConfigured } from '../lib/supabase'
+
+function atomic<T>(
+  localTables: Parameters<typeof db.transaction>[1][],
+  operation: () => Promise<T>,
+) {
+  return isSupabaseConfigured
+    ? operation()
+    : db.transaction('rw', localTables, operation)
+}
 
 export class FeederService {
   async createColony(
     input: Omit<CreateInput<FeederColony>, 'colonyId' | 'qrValue'>,
   ) {
-    return db.transaction('rw', db.feederColonies, async () => {
+    return atomic([db.feederColonies], async () => {
       const code = nextRecordCode(
         colonyPrefix(input.type),
-        (await db.feederColonies.toArray()).map((item) => item.colonyId),
+        (await feederColonyRepository.getAll()).map((item) => item.colonyId),
       )
       return feederColonyRepository.create({
         ...input,
@@ -83,7 +93,7 @@ export class FeederService {
           : 'CR-G'
     const code = nextRecordCode(
       prefix,
-      (await db.cricketBatches.toArray()).map((item) => item.batchId),
+      (await cricketBatchRepository.getAll()).map((item) => item.batchId),
     )
     const { incubationDays = 10, ...record } = input
     return cricketBatchRepository.create({
@@ -121,36 +131,31 @@ export class FeederService {
   ) {
     if (!Number.isFinite(delta) || delta === 0)
       throw new Error('Adjustment must be a non-zero number.')
-    return db.transaction(
-      'rw',
-      db.feederInventory,
-      db.inventoryTransactions,
-      async () => {
-        const item = await db.feederInventory.get(inventoryId)
-        if (!item) throw new Error('Inventory item not found.')
-        const balance = item.quantity + delta
-        if (balance < 0) throw new Error('Inventory cannot be negative.')
-        await feederInventoryRepository.update(item.id, {
-          quantity: balance,
-          status:
-            balance === 0
-              ? 'depleted'
-              : balance <= item.minimumStock
-                ? 'low-stock'
-                : item.status === 'depleted' || item.status === 'low-stock'
-                  ? 'available'
-                  : item.status,
-        })
-        return inventoryTransactionRepository.create({
-          inventoryId,
-          action,
-          quantityDelta: delta,
-          balanceAfter: balance,
-          occurredAt: new Date(),
-          notes,
-        })
-      },
-    )
+    return atomic([db.feederInventory, db.inventoryTransactions], async () => {
+      const item = await feederInventoryRepository.getById(inventoryId)
+      if (!item) throw new Error('Inventory item not found.')
+      const balance = item.quantity + delta
+      if (balance < 0) throw new Error('Inventory cannot be negative.')
+      await feederInventoryRepository.update(item.id, {
+        quantity: balance,
+        status:
+          balance === 0
+            ? 'depleted'
+            : balance <= item.minimumStock
+              ? 'low-stock'
+              : item.status === 'depleted' || item.status === 'low-stock'
+                ? 'available'
+                : item.status,
+      })
+      return inventoryTransactionRepository.create({
+        inventoryId,
+        action,
+        quantityDelta: delta,
+        balanceAfter: balance,
+        occurredAt: new Date(),
+        notes,
+      })
+    })
   }
   async createInventory(
     input: Omit<
@@ -160,32 +165,29 @@ export class FeederService {
     quantity: number,
   ) {
     if (quantity < 0) throw new Error('Quantity cannot be negative.')
-    return db.transaction(
-      'rw',
-      db.feederInventory,
-      db.inventoryTransactions,
-      async () => {
-        const code = nextRecordCode(
-          'INV',
-          (await db.feederInventory.toArray()).map((item) => item.inventoryId),
-        )
-        const item = await feederInventoryRepository.create({
-          ...input,
-          quantity,
-          inventoryId: code,
-          qrValue: `orchard:inventory:${code}`,
+    return atomic([db.feederInventory, db.inventoryTransactions], async () => {
+      const code = nextRecordCode(
+        'INV',
+        (await feederInventoryRepository.getAll()).map(
+          (item) => item.inventoryId,
+        ),
+      )
+      const item = await feederInventoryRepository.create({
+        ...input,
+        quantity,
+        inventoryId: code,
+        qrValue: `orchard:inventory:${code}`,
+      })
+      if (quantity)
+        await inventoryTransactionRepository.create({
+          inventoryId: item.id,
+          action: 'add',
+          quantityDelta: quantity,
+          balanceAfter: quantity,
+          occurredAt: new Date(),
         })
-        if (quantity)
-          await inventoryTransactionRepository.create({
-            inventoryId: item.id,
-            action: 'add',
-            quantityDelta: quantity,
-            balanceAfter: quantity,
-            occurredAt: new Date(),
-          })
-        return item
-      },
-    )
+      return item
+    })
   }
   logMaintenance(input: CreateInput<MaintenanceLog>) {
     if (!input.colonyId && !input.batchId)
@@ -195,11 +197,8 @@ export class FeederService {
   async logFeeding(input: CreateInput<FeedingLog>) {
     if (input.quantityEaten > input.quantityOffered || input.quantityEaten < 0)
       throw new Error('Invalid feeding quantities.')
-    return db.transaction(
-      'rw',
-      db.feedingLogs,
-      db.feederInventory,
-      db.inventoryTransactions,
+    return atomic(
+      [db.feedingLogs, db.feederInventory, db.inventoryTransactions],
       async () => {
         if (input.inventoryId && input.quantityEaten > 0)
           await this.adjustInventory(
@@ -217,11 +216,8 @@ export class FeederService {
       throw new Error('Harvest quantity must be positive.')
     if (input.destination === 'inventory' && !input.inventoryId)
       throw new Error('Choose the inventory item receiving this harvest.')
-    return db.transaction(
-      'rw',
-      db.harvestLogs,
-      db.feederInventory,
-      db.inventoryTransactions,
+    return atomic(
+      [db.harvestLogs, db.feederInventory, db.inventoryTransactions],
       async () => {
         const harvest = await harvestLogRepository.create(input)
         if (input.destination === 'inventory' && input.inventoryId)

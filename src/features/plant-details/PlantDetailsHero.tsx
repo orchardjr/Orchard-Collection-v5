@@ -22,6 +22,8 @@ export function PlantDetailsHero({ hero, plant }: PlantDetailsHeroProps) {
           <OrchardImage
             blob={hero.blob}
             thumbnailBlob={hero.thumbnailBlob}
+            src={hero.signedUrl}
+            thumbnailSrc={hero.thumbnailUrl}
             alt={`${getPlantDisplayName(plant)} hero`}
             className="size-full max-h-[520px] object-cover"
             imageClassName="object-cover"

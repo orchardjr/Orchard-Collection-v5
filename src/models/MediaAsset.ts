@@ -6,8 +6,12 @@ export interface MediaAsset extends BaseRecord {
   plantId: string
   fileName: string
   mimeType: string
-  blob: Blob
+  blob?: Blob
   thumbnailBlob?: Blob
+  storagePath?: string
+  thumbnailPath?: string
+  signedUrl?: string
+  thumbnailUrl?: string
   width?: number
   height?: number
   fileSize: number

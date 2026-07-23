@@ -8,6 +8,7 @@ interface OrchardImageProps {
   blob?: Blob
   thumbnailBlob?: Blob
   src?: string
+  thumbnailSrc?: string
   preferOriginal?: boolean
   className?: string
   imageClassName?: string
@@ -41,16 +42,22 @@ export function OrchardImage({
   src,
   style,
   thumbnailBlob,
+  thumbnailSrc,
 }: OrchardImageProps) {
   const [useOriginal, setUseOriginal] = useState(preferOriginal)
   const [loaded, setLoaded] = useState(false)
   const [failed, setFailed] = useState(false)
   const selectedBlob = useOriginal ? blob : (thumbnailBlob ?? blob)
   const objectUrl = useBlobUrl(selectedBlob)
-  const imageSource = objectUrl ?? (!selectedBlob ? src : undefined)
+  const selectedSrc = useOriginal ? src : (thumbnailSrc ?? src)
+  const imageSource = objectUrl ?? (!selectedBlob ? selectedSrc : undefined)
 
   const handleError = () => {
-    if (!useOriginal && thumbnailBlob && blob && thumbnailBlob !== blob) {
+    if (
+      !useOriginal &&
+      ((thumbnailBlob && blob && thumbnailBlob !== blob) ||
+        (thumbnailSrc && src && thumbnailSrc !== src))
+    ) {
       setUseOriginal(true)
       return
     }
@@ -65,7 +72,7 @@ export function OrchardImage({
           aria-hidden="true"
         />
       )}
-      {failed || (!selectedBlob && !src) ? (
+      {failed || (!selectedBlob && !selectedSrc) ? (
         <span className="absolute inset-0 grid place-items-center bg-accent-soft text-accent">
           <ImageIcon aria-hidden="true" />
           <span className="sr-only">Preview unavailable for {alt}</span>
