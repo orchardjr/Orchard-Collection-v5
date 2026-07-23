@@ -7,6 +7,7 @@ import { Button } from '../ui/Button'
 import { BottomNavigation } from './BottomNavigation'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
+import { OfflineBanner } from './OfflineBanner'
 
 export function AppLayout() {
   const drawerOpen = useUiStore((state) => state.drawerOpen)
@@ -18,6 +19,7 @@ export function AppLayout() {
       <Sidebar />
       <div className="min-w-0 flex-1">
         <TopBar />
+        <OfflineBanner />
         <main className="min-h-[calc(100vh-4rem)] pb-24 lg:pb-0">
           <Outlet />
         </main>
