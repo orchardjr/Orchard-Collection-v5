@@ -1,6 +1,8 @@
 import { Card } from '../components/ui/Card'
 import { Page } from '../components/ui/Page'
 import { useUiStore, type ThemePreference } from '../stores/uiStore'
+import { Button } from '../components/ui/Button'
+import { useAuth } from '../auth/authContext'
 
 const themes: Array<{
   value: ThemePreference
@@ -27,6 +29,7 @@ const themes: Array<{
 export function SettingsPage() {
   const theme = useUiStore((state) => state.theme)
   const setTheme = useUiStore((state) => state.setTheme)
+  const auth = useAuth()
 
   return (
     <Page
@@ -56,6 +59,17 @@ export function SettingsPage() {
           ))}
         </div>
       </Card>
+      {auth.configured && (
+        <Card
+          title="Account"
+          description={auth.user?.email ?? 'Your synchronized Orchard account.'}
+          className="mt-5 max-w-3xl"
+        >
+          <Button variant="secondary" onClick={() => void auth.signOut()}>
+            Log out
+          </Button>
+        </Card>
+      )}
     </Page>
   )
 }

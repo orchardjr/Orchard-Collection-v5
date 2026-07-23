@@ -2,6 +2,7 @@ import { lazy, Suspense, type ComponentType } from 'react'
 import { Route, Routes } from 'react-router-dom'
 
 import { RepositoryErrorBoundary } from '../components/errors/RepositoryErrorBoundary'
+import { AuthGate } from '../auth/AuthGate'
 import { AppLayout } from '../components/layout/AppLayout'
 import { Skeleton } from '../components/ui/Skeleton'
 
@@ -99,86 +100,88 @@ function RouteFallback() {
 
 export function App() {
   return (
-    <Suspense fallback={<RouteFallback />}>
-      <Routes>
-        <Route path="feeders/print/:type/:id" element={<DymoPrintPage />} />
-        <Route element={<AppLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route
-            path="collection"
-            element={
-              <RepositoryErrorBoundary>
-                <CollectionPage />
-              </RepositoryErrorBoundary>
-            }
-          />
-          <Route
-            path="collection/:plantId"
-            element={
-              <RepositoryErrorBoundary>
-                <PlantDetailsPage />
-              </RepositoryErrorBoundary>
-            }
-          />
-          <Route
-            path="spaces"
-            element={
-              <RepositoryErrorBoundary>
-                <SpacesPage />
-              </RepositoryErrorBoundary>
-            }
-          />
-          <Route
-            path="media"
-            element={
-              <RepositoryErrorBoundary>
-                <MediaPage />
-              </RepositoryErrorBoundary>
-            }
-          />
-          <Route
-            path="timeline"
-            element={
-              <RepositoryErrorBoundary>
-                <TimelinePage />
-              </RepositoryErrorBoundary>
-            }
-          />
-          <Route
-            path="tasks"
-            element={
-              <RepositoryErrorBoundary>
-                <TasksPage />
-              </RepositoryErrorBoundary>
-            }
-          />
-          <Route path="label-studio" element={<LabelStudioPage />} />
-          <Route path="analytics" element={<AnalyticsPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route
-            path="feeders"
-            element={
-              <RepositoryErrorBoundary>
-                <FeederShell />
-              </RepositoryErrorBoundary>
-            }
-          >
-            <Route index element={<FeederDashboardPage />} />
-            <Route path="colonies" element={<FeederColoniesPage />} />
-            <Route path="colonies/:id" element={<FeederDetailPage />} />
-            <Route path="crickets" element={<CricketBatchesPage />} />
-            <Route path="crickets/:id" element={<FeederDetailPage />} />
-            <Route path="inventory" element={<FeederInventoryPage />} />
-            <Route path="inventory/:id" element={<FeederDetailPage />} />
-            <Route path="maintenance" element={<MaintenanceLogPage />} />
-            <Route path="harvests" element={<HarvestLogPage />} />
-            <Route path="feedings" element={<FeedingLogPage />} />
-            <Route path="scan" element={<FeederScanPage />} />
-            <Route path="settings" element={<FeederSettingsPage />} />
+    <AuthGate>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="feeders/print/:type/:id" element={<DymoPrintPage />} />
+          <Route element={<AppLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route
+              path="collection"
+              element={
+                <RepositoryErrorBoundary>
+                  <CollectionPage />
+                </RepositoryErrorBoundary>
+              }
+            />
+            <Route
+              path="collection/:plantId"
+              element={
+                <RepositoryErrorBoundary>
+                  <PlantDetailsPage />
+                </RepositoryErrorBoundary>
+              }
+            />
+            <Route
+              path="spaces"
+              element={
+                <RepositoryErrorBoundary>
+                  <SpacesPage />
+                </RepositoryErrorBoundary>
+              }
+            />
+            <Route
+              path="media"
+              element={
+                <RepositoryErrorBoundary>
+                  <MediaPage />
+                </RepositoryErrorBoundary>
+              }
+            />
+            <Route
+              path="timeline"
+              element={
+                <RepositoryErrorBoundary>
+                  <TimelinePage />
+                </RepositoryErrorBoundary>
+              }
+            />
+            <Route
+              path="tasks"
+              element={
+                <RepositoryErrorBoundary>
+                  <TasksPage />
+                </RepositoryErrorBoundary>
+              }
+            />
+            <Route path="label-studio" element={<LabelStudioPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route
+              path="feeders"
+              element={
+                <RepositoryErrorBoundary>
+                  <FeederShell />
+                </RepositoryErrorBoundary>
+              }
+            >
+              <Route index element={<FeederDashboardPage />} />
+              <Route path="colonies" element={<FeederColoniesPage />} />
+              <Route path="colonies/:id" element={<FeederDetailPage />} />
+              <Route path="crickets" element={<CricketBatchesPage />} />
+              <Route path="crickets/:id" element={<FeederDetailPage />} />
+              <Route path="inventory" element={<FeederInventoryPage />} />
+              <Route path="inventory/:id" element={<FeederDetailPage />} />
+              <Route path="maintenance" element={<MaintenanceLogPage />} />
+              <Route path="harvests" element={<HarvestLogPage />} />
+              <Route path="feedings" element={<FeedingLogPage />} />
+              <Route path="scan" element={<FeederScanPage />} />
+              <Route path="settings" element={<FeederSettingsPage />} />
+            </Route>
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
-    </Suspense>
+        </Routes>
+      </Suspense>
+    </AuthGate>
   )
 }
