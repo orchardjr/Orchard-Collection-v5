@@ -145,18 +145,52 @@ export function legacyUuid(userId: string, value: string) {
   return `${result.slice(0, 8)}-${result.slice(8, 12)}-${result.slice(12, 16)}-${result.slice(16, 20)}-${result.slice(20)}`
 }
 
-function importRow(record: BaseRecord, userId: string) {
+type IdOverrides = Map<string, string>
+
+function cloudId(userId: string, value: string, overrides: IdOverrides) {
+  return overrides.get(value) ?? legacyUuid(userId, value)
+}
+
+async function referenceOverrides(): Promise<IdOverrides> {
+  const overrides: IdOverrides = new Map()
+  const [localSpecies, localSettings, speciesResult, settingsResult] =
+    await Promise.all([
+      db.feederSpecies.toArray(),
+      db.feederSettings.toArray(),
+      requireSupabase().from('feeder_species').select('id,name'),
+      requireSupabase().from('feeder_settings').select('id,key'),
+    ])
+  if (speciesResult.error || settingsResult.error)
+    throw new Error('Cloud feeder reference data could not be reconciled.')
+  const speciesByName = new Map(
+    (speciesResult.data ?? []).map((row) => [row.name, row.id]),
+  )
+  const settingsByKey = new Map(
+    (settingsResult.data ?? []).map((row) => [row.key, row.id]),
+  )
+  for (const record of localSpecies) {
+    const id = speciesByName.get(record.name)
+    if (id) overrides.set(record.id, id)
+  }
+  for (const record of localSettings) {
+    const id = settingsByKey.get(record.key)
+    if (id) overrides.set(record.id, id)
+  }
+  return overrides
+}
+
+function importRow(record: BaseRecord, userId: string, overrides: IdOverrides) {
   const remapped = Object.fromEntries(
     Object.entries(record).map(([key, value]) => [
       key,
       relationshipKeys.has(key) && typeof value === 'string'
-        ? legacyUuid(userId, value)
+        ? cloudId(userId, value, overrides)
         : value,
     ]),
   )
   return {
     ...toSupabaseRow(remapped),
-    id: legacyUuid(userId, record.id),
+    id: cloudId(userId, record.id, overrides),
     user_id: userId,
     legacy_id: record.id,
   }
@@ -166,11 +200,12 @@ async function upsertRecords(
   dexieTable: (typeof recordTables)[number][0],
   cloudTable: string,
   userId: string,
+  overrides: IdOverrides,
 ) {
   const records = await (db[dexieTable] as Table<BaseRecord, string>).toArray()
   if (!records.length) return 0
   const rows = records.map((record) => {
-    const row: Record<string, unknown> = importRow(record, userId)
+    const row: Record<string, unknown> = importRow(record, userId, overrides)
     if (cloudTable === 'plants') delete row.hero_media_id
     return row
   })
@@ -181,12 +216,16 @@ async function upsertRecords(
   return rows.length
 }
 
-async function uploadMedia(asset: MediaAsset, userId: string) {
+async function uploadMedia(
+  asset: MediaAsset,
+  userId: string,
+  overrides: IdOverrides,
+) {
   if (!asset.blob)
     throw new Error(`${asset.fileName}: original file is missing.`)
   const client = requireSupabase()
   const safeName = asset.fileName.replace(/[^a-zA-Z0-9._-]+/g, '-')
-  const base = `${userId}/${legacyUuid(userId, asset.plantId)}/${legacyUuid(userId, asset.id)}`
+  const base = `${userId}/${cloudId(userId, asset.plantId, overrides)}/${cloudId(userId, asset.id, overrides)}`
   const storagePath = `${base}/${safeName}`
   const thumbnailPath = asset.thumbnailBlob
     ? `${base}/thumbnail.webp`
@@ -208,7 +247,7 @@ async function uploadMedia(asset: MediaAsset, userId: string) {
     if (thumbnail.error) throw new Error(`${asset.fileName}: thumbnail failed.`)
   }
   const row = {
-    ...importRow(asset, userId),
+    ...importRow(asset, userId, overrides),
     storage_path: storagePath,
     thumbnail_path: thumbnailPath ?? null,
   }
@@ -218,19 +257,27 @@ async function uploadMedia(asset: MediaAsset, userId: string) {
   if (error) throw new Error(`${asset.fileName}: metadata import failed.`)
 }
 
-async function restoreHeroReferences(plants: Plant[], userId: string) {
+async function restoreHeroReferences(
+  plants: Plant[],
+  userId: string,
+  overrides: IdOverrides,
+) {
   const client = requireSupabase()
   for (const plant of plants) {
     if (!plant.heroMediaId) continue
     const { error } = await client.rpc('set_plant_media_hero', {
-      target_plant_id: legacyUuid(userId, plant.id),
-      target_media_id: legacyUuid(userId, plant.heroMediaId),
+      target_plant_id: cloudId(userId, plant.id, overrides),
+      target_media_id: cloudId(userId, plant.heroMediaId, overrides),
     })
     if (error) throw new Error(`${plant.nickname}: hero image import failed.`)
   }
 }
 
-async function verifyImportedRows(media: MediaAsset[], userId: string) {
+async function verifyImportedRows(
+  media: MediaAsset[],
+  userId: string,
+  overrides: IdOverrides,
+) {
   const client = requireSupabase()
   for (const [dexieTable, cloudTable] of recordTables) {
     const ids = await (db[dexieTable] as Table<BaseRecord, string>)
@@ -242,7 +289,7 @@ async function verifyImportedRows(media: MediaAsset[], userId: string) {
       .select('*', { count: 'exact', head: true })
       .in(
         'id',
-        ids.map((id) => legacyUuid(userId, id)),
+        ids.map((id) => cloudId(userId, id, overrides)),
       )
     if (error || count !== ids.length)
       throw new Error(`${cloudTable}: imported row count did not match.`)
@@ -253,7 +300,7 @@ async function verifyImportedRows(media: MediaAsset[], userId: string) {
       .select('*', { count: 'exact', head: true })
       .in(
         'id',
-        media.map((asset) => legacyUuid(userId, asset.id)),
+        media.map((asset) => cloudId(userId, asset.id, overrides)),
       )
     if (error || count !== media.length)
       throw new Error('Photos: imported row count did not match.')
@@ -263,6 +310,7 @@ async function verifyImportedRows(media: MediaAsset[], userId: string) {
 export async function importLegacyData(onProgress: ProgressCallback) {
   const userId = await ownerId()
   const sourceFingerprint = await fingerprint()
+  const overrides = await referenceOverrides()
   const counts = await getLegacyCounts()
   const media = await db.media.toArray()
   const total = recordTables.length + media.length + 1
@@ -272,7 +320,7 @@ export async function importLegacyData(onProgress: ProgressCallback) {
     onProgress({ completed: ++completed, total, label })
 
   const client = requireSupabase()
-  await client.from('local_imports').upsert(
+  const importState = await client.from('local_imports').upsert(
     {
       user_id: userId,
       source_fingerprint: sourceFingerprint,
@@ -283,10 +331,12 @@ export async function importLegacyData(onProgress: ProgressCallback) {
     },
     { onConflict: 'user_id,source_fingerprint' },
   )
+  if (importState.error)
+    throw new Error('Import progress could not be initialized. Retry safely.')
 
   for (const [dexieTable, cloudTable] of recordTables) {
     try {
-      await upsertRecords(dexieTable, cloudTable, userId)
+      await upsertRecords(dexieTable, cloudTable, userId, overrides)
     } catch (error) {
       errors.push(
         error instanceof Error ? error.message : `${cloudTable} failed.`,
@@ -296,7 +346,7 @@ export async function importLegacyData(onProgress: ProgressCallback) {
   }
   for (const asset of media) {
     try {
-      await uploadMedia(asset, userId)
+      await uploadMedia(asset, userId, overrides)
     } catch (error) {
       errors.push(
         error instanceof Error ? error.message : 'Photo upload failed.',
@@ -305,8 +355,8 @@ export async function importLegacyData(onProgress: ProgressCallback) {
     report(asset.fileName)
   }
   try {
-    await restoreHeroReferences(await db.plants.toArray(), userId)
-    await verifyImportedRows(media, userId)
+    await restoreHeroReferences(await db.plants.toArray(), userId, overrides)
+    await verifyImportedRows(media, userId, overrides)
   } catch (error) {
     errors.push(
       error instanceof Error ? error.message : 'Hero restoration failed.',
