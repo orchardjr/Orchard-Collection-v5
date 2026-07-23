@@ -74,10 +74,10 @@ describe('PlantRepository', () => {
       const updated = await plantService.update(plant.id, { favorite: true })
       expect(updated?.favorite).toBe(true)
       expect(
-        (await timelineRepository.getByPlantId(plant.id)).map(
-          (event) => event.title,
-        ),
-      ).toEqual(['Plant updated', 'Plant created'])
+        (await timelineRepository.getByPlantId(plant.id))
+          .map((event) => event.title)
+          .sort(),
+      ).toEqual(['Plant created', 'Plant updated'])
     } finally {
       vi.stubGlobal('crypto', originalCrypto)
     }

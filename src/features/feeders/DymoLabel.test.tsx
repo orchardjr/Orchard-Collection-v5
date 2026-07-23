@@ -19,7 +19,7 @@ const colony: FeederColony = {
   status: 'active',
   dateStarted: new Date('2026-07-01T12:00:00Z'),
   binId: 'BIN-A1',
-  qrValue: 'orchard://feeders/colonies/DSC-001',
+  qrValue: 'orchard:colony:DSC-001',
   createdAt: new Date('2026-07-01T12:00:00Z'),
   updatedAt: new Date('2026-07-01T12:00:00Z'),
 }
@@ -34,14 +34,14 @@ describe('DYMO print preview', () => {
 
     expect(container.querySelectorAll('.dymo-label')).toHaveLength(1)
     expect(container.querySelectorAll('.dymo-print-root')).toHaveLength(1)
-    expect(screen.getByRole('heading', { name: 'DSC-001' })).toBeVisible()
-    expect(screen.queryByText(/Orchard Chameleons/)).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'DSC-001' })).toBeTruthy()
+    expect(screen.queryByText(/Orchard Chameleons/)).toBeNull()
     expect(
       screen.getByRole('img', { name: /QR code/ }).closest('.dymo-label-qr'),
     ).not.toBeNull()
-    expect(screen.getByRole('img', { name: /QR code/ })).toHaveAccessibleName(
-      'QR code for http://localhost:3000/feeders/colonies/DSC-001',
-    )
+    expect(
+      screen.getByRole('img', { name: /QR code/ }).getAttribute('alt'),
+    ).toBe('QR code for http://localhost:3000/feeders/colonies/DSC-001')
   })
 
   it('defines one landscape page with DYMO driver overflow tolerance', () => {

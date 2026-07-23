@@ -4,6 +4,19 @@ import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import { App } from './App'
+import { AuthContext, type AuthContextValue } from '../auth/authContext'
+
+const localAuth: AuthContextValue = {
+  configured: false,
+  loading: false,
+  session: null,
+  user: null,
+  signIn: async () => undefined,
+  signUp: async () => undefined,
+  signOut: async () => undefined,
+  requestPasswordReset: async () => undefined,
+  updatePassword: async () => undefined,
+}
 
 describe('App', () => {
   it('renders the home route', async () => {
@@ -12,7 +25,9 @@ describe('App', () => {
     render(
       <MemoryRouter>
         <QueryClientProvider client={queryClient}>
-          <App />
+          <AuthContext.Provider value={localAuth}>
+            <App />
+          </AuthContext.Provider>
         </QueryClientProvider>
       </MemoryRouter>,
     )
@@ -21,6 +36,6 @@ describe('App', () => {
       await screen.findByRole('heading', {
         name: 'Welcome back to Orchard Collection.',
       }),
-    ).toBeInTheDocument()
+    ).toBeTruthy()
   })
 })

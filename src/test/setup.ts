@@ -1,5 +1,15 @@
 import 'fake-indexeddb/auto'
-import '@testing-library/jest-dom/vitest'
+
+if (!Blob.prototype.arrayBuffer) {
+  Blob.prototype.arrayBuffer = function () {
+    return new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onerror = () => reject(reader.error)
+      reader.onload = () => resolve(reader.result as ArrayBuffer)
+      reader.readAsArrayBuffer(this)
+    })
+  }
+}
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

@@ -168,7 +168,10 @@ export function LegacyImportGate({ children }: PropsWithChildren) {
             )}
 
             {(message || errors.length > 0) && (
-              <div role="alert" className="rounded-xl bg-danger/10 p-4 text-sm">
+              <div
+                role="alert"
+                className="rounded-xl bg-red-50 p-4 text-sm text-red-900 dark:bg-red-950 dark:text-red-100"
+              >
                 {message}
                 {errors.length > 0 && (
                   <ul className="mt-2 list-disc space-y-1 pl-5">

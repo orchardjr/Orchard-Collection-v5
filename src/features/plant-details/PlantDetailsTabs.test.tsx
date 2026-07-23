@@ -18,7 +18,7 @@ describe('PlantDetailsTabs', () => {
     overview.focus()
     fireEvent.keyDown(overview, { key: 'ArrowRight' })
 
-    expect(timeline).toHaveAttribute('aria-selected', 'true')
-    expect(timeline).toHaveFocus()
+    expect(timeline.getAttribute('aria-selected')).toBe('true')
+    expect(document.activeElement).toBe(timeline)
   })
 })

@@ -123,4 +123,3 @@ Realtime-cleanup, or network/offline test coverage before this migration.
    invalidate TanStack Query keys; always remove the channel on cleanup.
 9. Keep cached query data visible during temporary disconnection, but block
    cloud writes with a clear error and offline indicator.
-
