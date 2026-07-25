@@ -158,6 +158,20 @@ export class OrchardDatabase extends Dexie {
       nfcTags:
         'id, &publicToken, resourceType, resourceId, &uid, assignedAt, lastScannedAt, createdAt',
     })
+
+    this.version(9)
+      .stores({
+        nfcTags:
+          'id, &publicToken, resourceType, resourceId, &uid, assignedAt, lastScannedAt, createdAt',
+      })
+      .upgrade(async (transaction) => {
+        await transaction
+          .table<NfcTag, string>('nfcTags')
+          .toCollection()
+          .modify((tag) => {
+            tag.scanCount ??= 0
+          })
+      })
   }
 }
 

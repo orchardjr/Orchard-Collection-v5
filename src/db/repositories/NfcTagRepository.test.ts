@@ -10,7 +10,7 @@ describe('NfcTagRepository', () => {
     await db.nfcTags.clear()
   })
 
-  it('assigns, resolves, scans, and unassigns a plant tag', async () => {
+  it('records first and repeated scans atomically', async () => {
     const tag = await repository.assignTag({
       resourceType: 'plant',
       resourceId: 'plant-1',
@@ -26,14 +26,44 @@ describe('NfcTagRepository', () => {
     expect(await repository.listAssigned()).toHaveLength(1)
     expect(await repository.listUnassigned()).toHaveLength(0)
 
-    await repository.updateLastScan(tag.id, new Date('2026-07-25T12:00:00Z'))
-    expect((await repository.getById(tag.id))?.lastScannedAt).toEqual(
-      new Date('2026-07-25T12:00:00Z'),
-    )
+    const firstScan = new Date('2026-07-25T12:00:00Z')
+    const secondScan = new Date('2026-07-25T13:30:00Z')
+    await repository.updateLastScan(tag.id, firstScan, 'Safari · iPhone')
+    await repository.updateLastScan(tag.id, secondScan, 'Chrome · macOS')
+
+    const scanned = await repository.getById(tag.id)
+    expect(scanned).toMatchObject({
+      scanCount: 2,
+      firstScannedAt: firstScan,
+      lastScannedAt: secondScan,
+      lastScannedDevice: 'Chrome · macOS',
+    })
+    expect(scanned?.firstScannedAt).toEqual(firstScan)
+    expect(scanned?.lastScannedAt).toEqual(secondScan)
 
     await repository.unassignTag(tag.id)
     expect(await repository.listAssigned()).toHaveLength(0)
     expect(await repository.listUnassigned()).toHaveLength(1)
+  })
+
+  it('initializes first-scan analytics once', async () => {
+    const tag = await repository.assignTag({
+      resourceType: 'plant',
+      resourceId: 'plant-first-scan',
+    })
+    const scannedAt = new Date('2026-07-25T12:00:00Z')
+
+    await repository.updateLastScan(tag.id, scannedAt, 'Mobile Safari')
+
+    expect(await repository.getById(tag.id)).toMatchObject({
+      scanCount: 1,
+      firstScannedAt: scannedAt,
+      lastScannedAt: scannedAt,
+      lastScannedDevice: 'Mobile Safari',
+    })
+    expect((await repository.getById(tag.id))?.lastScannedAt).toEqual(
+      new Date('2026-07-25T12:00:00Z'),
+    )
   })
 
   it('replaces a tag while preserving its assignment', async () => {

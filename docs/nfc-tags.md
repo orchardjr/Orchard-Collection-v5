@@ -25,7 +25,8 @@ auditability. Removing a tag also unassigns rather than deleting it.
 - Authenticated CRUD policies remain scoped to `auth.uid() = user_id`.
 - Anonymous scans cannot select `nfc_tags`. They call `scan_nfc_tag`, a
   narrowly scoped function that returns only the public routing fields and
-  updates `last_scanned_at`.
+  atomically increments `scan_count`, sets `first_scanned_at`, updates
+  `last_scanned_at`, and stores a best-effort browser/platform description.
 - `public_token` is an unguessable UUID and is unique across all users.
 - Dexie schema version 8 mirrors the tag model for local/offline mode.
 

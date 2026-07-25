@@ -8,7 +8,10 @@ create table public.nfc_tags (
   nickname text,
   notes text,
   assigned_at timestamptz,
+  scan_count integer not null default 0,
+  first_scanned_at timestamptz,
   last_scanned_at timestamptz,
+  last_scanned_device text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id, id),
@@ -130,7 +133,10 @@ begin
 end;
 $$;
 
-create or replace function public.scan_nfc_tag(token uuid)
+create or replace function public.scan_nfc_tag(
+  token uuid,
+  device text default null
+)
 returns table (
   public_token uuid,
   resource_type text,
@@ -142,7 +148,11 @@ security definer
 set search_path = ''
 as $$
   update public.nfc_tags
-  set last_scanned_at = now()
+  set
+    scan_count = nfc_tags.scan_count + 1,
+    first_scanned_at = coalesce(nfc_tags.first_scanned_at, now()),
+    last_scanned_at = now(),
+    last_scanned_device = nullif(left(device, 500), '')
   where nfc_tags.public_token = token
     and nfc_tags.resource_id is not null
   returning
@@ -152,12 +162,42 @@ as $$
     nfc_tags.nickname;
 $$;
 
+create or replace function public.record_nfc_scan(
+  input_tag_id uuid,
+  input_scanned_at timestamptz default now(),
+  input_device text default null
+)
+returns setof public.nfc_tags
+language sql
+security invoker
+set search_path = ''
+as $$
+  update public.nfc_tags
+  set
+    scan_count = nfc_tags.scan_count + 1,
+    first_scanned_at = coalesce(
+      nfc_tags.first_scanned_at,
+      input_scanned_at
+    ),
+    last_scanned_at = input_scanned_at,
+    last_scanned_device = nullif(left(input_device, 500), '')
+  where nfc_tags.id = input_tag_id
+    and nfc_tags.user_id = (select auth.uid())
+    and nfc_tags.resource_id is not null
+  returning *;
+$$;
+
 revoke all on function public.replace_nfc_tag(uuid, uuid, text, text, text)
   from public;
 grant execute on function public.replace_nfc_tag(uuid, uuid, text, text, text)
   to authenticated;
 
-revoke all on function public.scan_nfc_tag(uuid) from public;
-grant execute on function public.scan_nfc_tag(uuid) to anon, authenticated;
+revoke all on function public.scan_nfc_tag(uuid, text) from public;
+grant execute on function public.scan_nfc_tag(uuid, text)
+  to anon, authenticated;
+revoke all on function public.record_nfc_scan(uuid, timestamptz, text)
+  from public;
+grant execute on function public.record_nfc_scan(uuid, timestamptz, text)
+  to authenticated;
 
 alter publication supabase_realtime add table public.nfc_tags;

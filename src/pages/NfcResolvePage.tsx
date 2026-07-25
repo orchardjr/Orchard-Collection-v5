@@ -10,6 +10,13 @@ type ResolutionState = 'loading' | 'invalid' | 'error'
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
+function deviceIdentifier() {
+  const value = [navigator.platform, navigator.userAgent]
+    .filter(Boolean)
+    .join(' · ')
+  return value.slice(0, 500) || undefined
+}
+
 export function NfcResolvePage() {
   const { token = '' } = useParams<{ token: string }>()
   const navigate = useNavigate()
@@ -28,7 +35,7 @@ export function NfcResolvePage() {
     let active = true
     if (!validToken) return
     void nfcTagService
-      .resolvePublicToken(token)
+      .resolvePublicToken(token, deviceIdentifier())
       .then((result) => {
         if (!active) return
         if (!result || result.resourceType !== 'plant') {

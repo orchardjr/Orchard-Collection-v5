@@ -28,6 +28,7 @@ export class NfcTagRepository extends BaseRepository<NfcTag> {
       ...input,
       publicToken: input.publicToken ?? createId(),
       assignedAt: now,
+      scanCount: 0,
     })
   }
 
@@ -62,8 +63,21 @@ export class NfcTagRepository extends BaseRepository<NfcTag> {
     return db.nfcTags.where('uid').equals(uid).first()
   }
 
-  updateLastScan(id: string, scannedAt = new Date()) {
-    return this.update(id, { lastScannedAt: scannedAt })
+  updateLastScan(
+    id: string,
+    scannedAt = new Date(),
+    lastScannedDevice?: string,
+  ) {
+    return db.transaction('rw', db.nfcTags, async () => {
+      const tag = await this.getById(id)
+      if (!tag) return undefined
+      return this.update(id, {
+        scanCount: (tag.scanCount ?? 0) + 1,
+        firstScannedAt: tag.firstScannedAt ?? scannedAt,
+        lastScannedAt: scannedAt,
+        lastScannedDevice,
+      })
+    })
   }
 
   listAssigned() {

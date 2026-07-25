@@ -19,11 +19,11 @@ class NfcTagService {
     return nfcTagRepository.replaceTag(id, input)
   }
 
-  async resolvePublicToken(publicToken: string) {
-    if (isSupabaseConfigured) return resolveCloudNfcToken(publicToken)
+  async resolvePublicToken(publicToken: string, device?: string) {
+    if (isSupabaseConfigured) return resolveCloudNfcToken(publicToken, device)
     const tag = await nfcTagRepository.findByToken(publicToken)
     if (!tag?.resourceId) return undefined
-    await nfcTagRepository.updateLastScan(tag.id)
+    await nfcTagRepository.updateLastScan(tag.id, new Date(), device)
     return {
       publicToken: tag.publicToken,
       resourceType: tag.resourceType,

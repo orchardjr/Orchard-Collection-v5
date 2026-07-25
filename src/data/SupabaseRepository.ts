@@ -39,6 +39,7 @@ const dateKeys = new Set([
   'useByAt',
   'assignedAt',
   'lastScannedAt',
+  'firstScannedAt',
 ])
 
 function camel(value: string) {

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { resolvePublicTokenMock } = vi.hoisted(() => ({
   resolvePublicTokenMock: vi.fn(),
@@ -13,6 +13,10 @@ vi.mock('../services/NfcTagService', () => ({
 import { NfcResolvePage } from './NfcResolvePage'
 
 describe('NfcResolvePage', () => {
+  beforeEach(() => {
+    resolvePublicTokenMock.mockReset()
+  })
+
   it('shows a friendly state without querying malformed tokens', async () => {
     render(
       <MemoryRouter initialEntries={['/nfc/not-a-token']}>
@@ -53,5 +57,9 @@ describe('NfcResolvePage', () => {
     expect(
       await screen.findByRole('heading', { name: 'Resolved plant' }),
     ).toBeTruthy()
+    expect(resolvePublicTokenMock).toHaveBeenCalledWith(
+      '0aeebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+      expect.stringContaining(navigator.userAgent),
+    )
   })
 })

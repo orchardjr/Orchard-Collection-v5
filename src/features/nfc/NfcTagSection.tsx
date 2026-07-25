@@ -128,6 +128,15 @@ export function NfcTagSection({
     >
       <dl className="grid gap-3 md:grid-cols-2">
         <PropertyField label="Nickname" value={tag.nickname} />
+        <PropertyField label="Total scans" value={tag.scanCount} />
+        <PropertyField
+          label="First scanned"
+          value={
+            tag.firstScannedAt
+              ? tag.firstScannedAt.toLocaleString()
+              : 'Never scanned'
+          }
+        />
         <PropertyField
           label="Last scanned"
           value={

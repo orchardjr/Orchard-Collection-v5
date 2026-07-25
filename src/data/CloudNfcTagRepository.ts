@@ -18,6 +18,7 @@ export class CloudNfcTagRepository extends SupabaseRepository<NfcTag> {
       ...input,
       publicToken: input.publicToken ?? createId(),
       assignedAt: new Date(),
+      scanCount: 0,
     })
   }
 
@@ -49,8 +50,19 @@ export class CloudNfcTagRepository extends SupabaseRepository<NfcTag> {
     return this.findOne('uid', uid)
   }
 
-  updateLastScan(id: string, scannedAt = new Date()) {
-    return this.update(id, { lastScannedAt: scannedAt })
+  async updateLastScan(
+    id: string,
+    scannedAt = new Date(),
+    lastScannedDevice?: string,
+  ) {
+    const { data, error } = await requireSupabase().rpc('record_nfc_scan', {
+      input_tag_id: id,
+      input_scanned_at: scannedAt.toISOString(),
+      input_device: lastScannedDevice ?? null,
+    })
+    if (error) throw repositoryError('write', error)
+    const row = Array.isArray(data) ? data[0] : data
+    return row ? fromSupabaseRow<NfcTag>(row) : undefined
   }
 
   async listAssigned() {
@@ -97,9 +109,11 @@ export class CloudNfcTagRepository extends SupabaseRepository<NfcTag> {
 
 export async function resolveCloudNfcToken(
   publicToken: string,
+  device?: string,
 ): Promise<PublicNfcResolution | undefined> {
   const { data, error } = await requireSupabase().rpc('scan_nfc_tag', {
     token: publicToken,
+    device: device ?? null,
   })
   if (error) throw repositoryError('read', error)
   const row = Array.isArray(data) ? data[0] : data
