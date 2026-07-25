@@ -2,6 +2,7 @@ import { Copy, Plus, Save, Star, Trash2 } from 'lucide-react'
 
 import { Button } from '../../components/ui/Button'
 import type { LabelFieldId, LabelTemplateDefinition } from '../../models'
+import { validateLabelTemplate } from '../../services/TemplateService'
 
 const fieldOptions: { id: LabelFieldId; label: string }[] = [
   { id: 'plantName', label: 'Plant name' },
@@ -32,6 +33,7 @@ interface Props {
 
 export function TemplateEditor(props: Props) {
   const { template, onChange } = props
+  const validationErrors = validateLabelTemplate(template)
   const patch = (value: Partial<LabelTemplateDefinition>) =>
     onChange({ ...template, ...value })
 
@@ -42,8 +44,9 @@ export function TemplateEditor(props: Props) {
           Template name
           <input
             value={template.name}
+            maxLength={120}
             onChange={(e) => patch({ name: e.target.value })}
-            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 font-normal"
+            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 font-normal focus-visible:outline-2 focus-visible:outline-accent"
           />
         </label>
         <label className="text-sm font-semibold">
@@ -51,10 +54,11 @@ export function TemplateEditor(props: Props) {
           <input
             type="number"
             min="0.5"
+            max="24"
             step="0.125"
             value={template.widthIn}
             onChange={(e) => patch({ widthIn: Number(e.target.value) })}
-            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 font-normal"
+            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 font-normal focus-visible:outline-2 focus-visible:outline-accent"
           />
         </label>
         <label className="text-sm font-semibold">
@@ -62,10 +66,11 @@ export function TemplateEditor(props: Props) {
           <input
             type="number"
             min="0.5"
+            max="24"
             step="0.125"
             value={template.heightIn}
             onChange={(e) => patch({ heightIn: Number(e.target.value) })}
-            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 font-normal"
+            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 font-normal focus-visible:outline-2 focus-visible:outline-accent"
           />
         </label>
         <label className="text-sm font-semibold">
@@ -77,7 +82,7 @@ export function TemplateEditor(props: Props) {
             step="0.05"
             value={template.fontScale}
             onChange={(e) => patch({ fontScale: Number(e.target.value) })}
-            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 font-normal"
+            className="mt-1 min-h-11 w-full rounded-xl border border-border bg-surface px-3 font-normal focus-visible:outline-2 focus-visible:outline-accent"
           />
         </label>
       </div>
@@ -108,9 +113,13 @@ export function TemplateEditor(props: Props) {
       {template.fields.includes('customFields') && (
         <div className="space-y-2">
           {template.customFields.map((field) => (
-            <div key={field.id} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+            <div
+              key={field.id}
+              className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]"
+            >
               <input
                 aria-label="Custom field label"
+                maxLength={80}
                 value={field.label}
                 placeholder="Label"
                 onChange={(e) =>
@@ -122,10 +131,11 @@ export function TemplateEditor(props: Props) {
                     ),
                   })
                 }
-                className="min-h-11 rounded-xl border border-border bg-surface px-3"
+                className="min-h-11 rounded-xl border border-border bg-surface px-3 focus-visible:outline-2 focus-visible:outline-accent"
               />
               <input
                 aria-label="Custom field value"
+                maxLength={240}
                 value={field.value}
                 placeholder="Value"
                 onChange={(e) =>
@@ -137,10 +147,10 @@ export function TemplateEditor(props: Props) {
                     ),
                   })
                 }
-                className="min-h-11 rounded-xl border border-border bg-surface px-3"
+                className="min-h-11 rounded-xl border border-border bg-surface px-3 focus-visible:outline-2 focus-visible:outline-accent"
               />
               <Button
-                aria-label="Remove custom field"
+                aria-label={`Remove custom field ${field.label || 'without a label'}`}
                 variant="ghost"
                 onClick={() =>
                   patch({
@@ -169,8 +179,21 @@ export function TemplateEditor(props: Props) {
           </Button>
         </div>
       )}
+      {validationErrors.length > 0 && (
+        <ul
+          className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+          aria-label="Template validation errors"
+        >
+          {validationErrors.map((error) => (
+            <li key={error}>{error}</li>
+          ))}
+        </ul>
+      )}
       <div className="flex flex-wrap gap-2">
-        <Button disabled={props.busy} onClick={props.onSave}>
+        <Button
+          disabled={props.busy || validationErrors.length > 0}
+          onClick={props.onSave}
+        >
           <Save className="size-4" />
           {template.builtIn ? 'Save as custom' : 'Save changes'}
         </Button>

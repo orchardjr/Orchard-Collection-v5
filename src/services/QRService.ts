@@ -10,15 +10,15 @@ export class QRService {
   toSvg(publicToken: string) {
     return QRCode.toString(this.url(publicToken), {
       type: 'svg',
-      errorCorrectionLevel: 'M',
-      margin: 1,
+      errorCorrectionLevel: 'Q',
+      margin: 2,
       color: { dark: '#000000', light: '#ffffff' },
     })
   }
 
   toDataUrl(publicToken: string, width = 768) {
     return QRCode.toDataURL(this.url(publicToken), {
-      errorCorrectionLevel: 'M',
+      errorCorrectionLevel: 'Q',
       margin: 2,
       width,
       color: { dark: '#000000', light: '#ffffff' },

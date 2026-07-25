@@ -1,5 +1,3 @@
-import { LoaderCircle } from 'lucide-react'
-
 import type { RenderedLabel } from '../../services/LabelService'
 
 interface LabelPreviewProps {
@@ -9,9 +7,15 @@ interface LabelPreviewProps {
 
 export function LabelPreview({ label, loading }: LabelPreviewProps) {
   return (
-    <div className="flex min-h-72 items-center justify-center overflow-auto rounded-2xl border border-dashed border-border bg-surface-muted p-5">
+    <div
+      className="flex min-h-72 items-center justify-center overflow-auto rounded-2xl border border-dashed border-border bg-surface-muted p-5"
+      aria-busy={loading}
+      aria-label="Label preview"
+    >
       {loading ? (
-        <LoaderCircle className="size-7 animate-spin text-muted-foreground" />
+        <div className="h-36 w-full max-w-sm animate-pulse rounded-xl bg-border/60">
+          <span className="sr-only">Rendering label preview</span>
+        </div>
       ) : label ? (
         <div
           className="max-w-full overflow-hidden bg-white shadow-xl"

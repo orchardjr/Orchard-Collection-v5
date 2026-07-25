@@ -135,6 +135,50 @@ export type EditableTemplate = Omit<
   'id' | 'createdAt' | 'updatedAt'
 >
 
+export function validateLabelTemplate(template: EditableTemplate) {
+  const errors: string[] = []
+  if (!template.name.trim()) errors.push('Template name is required.')
+  if (
+    !Number.isFinite(template.widthIn) ||
+    template.widthIn < 0.5 ||
+    template.widthIn > 24
+  )
+    errors.push('Width must be between 0.5 and 24 inches.')
+  if (
+    !Number.isFinite(template.heightIn) ||
+    template.heightIn < 0.5 ||
+    template.heightIn > 24
+  )
+    errors.push('Height must be between 0.5 and 24 inches.')
+  if (!template.fields.length) errors.push('Select at least one label field.')
+  if (
+    !Number.isFinite(template.fontScale) ||
+    template.fontScale < 0.5 ||
+    template.fontScale > 2
+  )
+    errors.push('Text scale must be between 0.5 and 2.')
+  if (
+    template.fields.includes('qrCode') &&
+    (!Number.isFinite(template.qrSizeIn) ||
+      template.qrSizeIn < 0.7 ||
+      template.qrSizeIn > Math.min(template.widthIn, template.heightIn))
+  )
+    errors.push('QR size must fit the label and be at least 0.7 inches.')
+  if (
+    !Number.isFinite(template.barcodeHeightIn) ||
+    template.barcodeHeightIn < 0 ||
+    template.barcodeHeightIn > template.heightIn / 2
+  )
+    errors.push('Barcode height must fit within half the label height.')
+  if (
+    template.customFields.some(
+      ({ label, value }) => label.length > 80 || value.length > 240,
+    )
+  )
+    errors.push('Custom labels are limited to 80 and values to 240 characters.')
+  return errors
+}
+
 export class TemplateService {
   async list(): Promise<LabelTemplateDefinition[]> {
     const custom = await labelTemplateRepository.getAll()
@@ -145,12 +189,29 @@ export class TemplateService {
   }
 
   async save(template: EditableTemplate) {
-    return labelTemplateRepository.create(template)
+    const normalized = { ...template, name: template.name.trim() }
+    this.assertValid(normalized)
+    await this.assertNameAvailable(normalized.name)
+    return labelTemplateRepository.create(normalized)
   }
 
   async duplicate(template: LabelTemplateDefinition) {
+    return this.saveDefinition(
+      template,
+      await this.uniqueName(`${template.name} copy`),
+    )
+  }
+
+  async saveAsCustom(template: LabelTemplateDefinition) {
+    return this.saveDefinition(
+      template,
+      await this.uniqueName(`${template.name} custom`),
+    )
+  }
+
+  private saveDefinition(template: LabelTemplateDefinition, name: string) {
     return this.save({
-      name: await this.uniqueName(`${template.name} copy`),
+      name,
       widthIn: template.widthIn,
       heightIn: template.heightIn,
       fields: [...template.fields],
@@ -162,16 +223,22 @@ export class TemplateService {
   }
 
   async rename(id: string, name: string) {
-    return labelTemplateRepository.update(id, { name: name.trim() })
+    const normalized = name.trim()
+    if (!normalized) throw new Error('Template name is required.')
+    await this.assertNameAvailable(normalized, id)
+    return labelTemplateRepository.update(id, { name: normalized })
   }
 
   async update(id: string, template: EditableTemplate) {
-    return labelTemplateRepository.update(id, template)
+    const normalized = { ...template, name: template.name.trim() }
+    this.assertValid(normalized)
+    await this.assertNameAvailable(normalized.name, id)
+    return labelTemplateRepository.update(id, normalized)
   }
 
-  delete(id: string) {
+  async delete(id: string) {
+    await labelTemplateRepository.delete(id)
     if (this.getDefaultId() === id) localStorage.removeItem(DEFAULT_KEY)
-    return labelTemplateRepository.delete(id)
   }
 
   setDefault(id: string) {
@@ -183,11 +250,28 @@ export class TemplateService {
   }
 
   private async uniqueName(base: string) {
-    const names = new Set((await this.list()).map((item) => item.name))
-    if (!names.has(base)) return base
+    const names = new Set(
+      (await this.list()).map((item) => item.name.trim().toLocaleLowerCase()),
+    )
+    if (!names.has(base.toLocaleLowerCase())) return base
     let index = 2
-    while (names.has(`${base} ${index}`)) index += 1
+    while (names.has(`${base} ${index}`.toLocaleLowerCase())) index += 1
     return `${base} ${index}`
+  }
+
+  private assertValid(template: EditableTemplate) {
+    const errors = validateLabelTemplate(template)
+    if (errors[0]) throw new Error(errors[0])
+  }
+
+  private async assertNameAvailable(name: string, excludedId?: string) {
+    const normalized = name.trim().toLocaleLowerCase()
+    const duplicate = (await this.list()).some(
+      (template) =>
+        template.id !== excludedId &&
+        template.name.trim().toLocaleLowerCase() === normalized,
+    )
+    if (duplicate) throw new Error('A template with this name already exists.')
   }
 }
 

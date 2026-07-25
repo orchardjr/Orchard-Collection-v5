@@ -3,6 +3,8 @@ import { useMemo, useState } from 'react'
 
 import type { Plant } from '../../models'
 
+const PAGE_SIZE = 100
+
 interface Props {
   plants: Plant[]
   selected: Set<string>
@@ -12,6 +14,7 @@ interface Props {
 export function PlantBatchSelector({ plants, selected, onChange }: Props) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('active')
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const filtered = useMemo(
     () =>
       plants.filter((plant) => {
@@ -24,6 +27,7 @@ export function PlantBatchSelector({ plants, selected, onChange }: Props) {
       }),
     [filter, plants, search],
   )
+  const visiblePlants = filtered.slice(0, visibleCount)
 
   const selectFiltered = () => onChange(new Set(filtered.map(({ id }) => id)))
 
@@ -35,7 +39,10 @@ export function PlantBatchSelector({ plants, selected, onChange }: Props) {
           <Search className="pointer-events-none absolute left-3 top-3.5 size-4 text-muted-foreground" />
           <input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              setVisibleCount(PAGE_SIZE)
+            }}
             placeholder="Search plants"
             className="min-h-11 w-full rounded-xl border border-border bg-surface pl-10 pr-3 focus:outline-2 focus:outline-accent"
           />
@@ -43,8 +50,11 @@ export function PlantBatchSelector({ plants, selected, onChange }: Props) {
         <select
           aria-label="Filter plants"
           value={filter}
-          onChange={(event) => setFilter(event.target.value)}
-          className="min-h-11 rounded-xl border border-border bg-surface px-3"
+          onChange={(event) => {
+            setFilter(event.target.value)
+            setVisibleCount(PAGE_SIZE)
+          }}
+          className="min-h-11 rounded-xl border border-border bg-surface px-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <option value="active">Active plants</option>
           <option value="favorites">Favorites</option>
@@ -56,7 +66,7 @@ export function PlantBatchSelector({ plants, selected, onChange }: Props) {
         <button
           type="button"
           onClick={selectFiltered}
-          className="text-sm font-semibold text-accent"
+          className="min-h-11 rounded-lg px-2 text-sm font-semibold text-accent focus-visible:outline-2 focus-visible:outline-accent"
         >
           Select filtered ({filtered.length})
         </button>
@@ -66,16 +76,16 @@ export function PlantBatchSelector({ plants, selected, onChange }: Props) {
         <button
           type="button"
           onClick={() => onChange(new Set())}
-          className="text-sm font-semibold text-muted-foreground"
+          className="min-h-11 rounded-lg px-2 text-sm font-semibold text-muted-foreground focus-visible:outline-2 focus-visible:outline-accent"
         >
           Clear selection
         </button>
       </div>
       <div className="max-h-64 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
-        {filtered.map((plant) => (
+        {visiblePlants.map((plant) => (
           <label
             key={plant.id}
-            className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 hover:bg-surface-muted"
+            className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 hover:bg-surface-muted focus-within:outline-2 focus-within:outline-accent"
           >
             <input
               type="checkbox"
@@ -103,7 +113,22 @@ export function PlantBatchSelector({ plants, selected, onChange }: Props) {
             No plants match this view.
           </p>
         )}
+        {visiblePlants.length < filtered.length && (
+          <button
+            type="button"
+            onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
+            className="min-h-11 w-full rounded-lg text-sm font-semibold text-accent hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            Show {Math.min(PAGE_SIZE, filtered.length - visiblePlants.length)}{' '}
+            more
+          </button>
+        )}
       </div>
+      {filtered.length > PAGE_SIZE && (
+        <p className="text-xs text-muted-foreground" aria-live="polite">
+          Showing {visiblePlants.length} of {filtered.length} matching plants.
+        </p>
+      )}
     </div>
   )
 }

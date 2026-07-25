@@ -11,11 +11,15 @@ Label Studio creates plant labels from reusable built-in or custom templates. Op
 
 For DYMO and standard thermal printers, select the paper size matching the template, margins **none**, and **100% scale**. Browser “fit to page” can change the physical dimensions.
 
+For batches over 100 labels, use PDF or browser print. PNG is intentionally limited to 100 labels because browser canvas-size limits make larger single-image sheets unreliable. Label rendering uses bounded concurrency and yields periodically so selections of 500–1,000 plants remain responsive. PDF code is loaded only when requested.
+
 QR labels contain the permanent public NFC URL (`https://app.orchardcollection.ca/nfc/<public_token>`). A plant without an assigned NFC tag displays an explicit “NFC not assigned” preview instead of generating an unusable QR code.
 
 ## Templates
 
 Built-in templates are immutable starting points. Edit one and choose **Save as custom**, or duplicate any template. Custom templates are stored locally in Dexie when offline and in Supabase when cloud mode is configured. They can be renamed, updated, duplicated, deleted, or set as the default.
+
+Template names must be unique regardless of capitalization. Dimensions, typography, QR size, barcode height, selected fields, and custom-field lengths are validated before persistence. QR graphics use a four-sided quiet zone and high error correction for reliable thermal output.
 
 The `LabelTemplate` model stores dimensions, selected fields, typography and machine-readable-code sizes. New templates and fields can be added without changing the rendering or export UI.
 

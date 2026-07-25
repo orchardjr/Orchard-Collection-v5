@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Download, FileImage, FileText, Printer } from 'lucide-react'
+import { Download, FileImage, FileText, Printer, Tags } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { EmptyState } from '../components/ui/EmptyState'
 import { Page } from '../components/ui/Page'
 import { LabelPreview } from '../features/labels/LabelPreview'
 import { PlantBatchSelector } from '../features/labels/PlantBatchSelector'
@@ -21,11 +22,15 @@ import { templateService } from '../services/TemplateService'
 export function LabelStudioPage() {
   const { data: plants = [], isLoading: plantsLoading } = usePlants()
   const { data: spaces = [] } = useSpaces()
-  const { data: tags = [] } = useQuery({
+  const { data: tags = [], isError: tagsError } = useQuery({
     queryKey: ['nfc-tags', 'assigned'],
     queryFn: () => nfcTagRepository.listAssigned(),
   })
-  const { data: templates = [], isLoading: templatesLoading } = useQuery({
+  const {
+    data: templates = [],
+    isLoading: templatesLoading,
+    isError: templatesError,
+  } = useQuery({
     queryKey: ['label-templates'],
     queryFn: () => templateService.list(),
   })
@@ -34,6 +39,9 @@ export function LabelStudioPage() {
   const [draft, setDraft] = useState<LabelTemplateDefinition>()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [message, setMessage] = useState('')
+  const [messageIsError, setMessageIsError] = useState(false)
+  const [exportProgress, setExportProgress] = useState<number>()
+  const [exportBusy, setExportBusy] = useState(false)
   const [defaultId, setDefaultId] = useState(templateService.getDefaultId())
   const selectedTemplate =
     templates.find(({ id }) => id === templateId) ??
@@ -82,28 +90,50 @@ export function LabelStudioPage() {
         barcodeHeightIn: activeTemplate.barcodeHeightIn,
       }
       return activeTemplate.builtIn
-        ? templateService.save(editable)
+        ? templateService.saveAsCustom({ ...activeTemplate, ...editable })
         : templateService.update(activeTemplate.id, editable)
     },
-    onSuccess: async (result) => {
+    onSuccess: async (result, action) => {
       await queryClient.invalidateQueries({ queryKey: ['label-templates'] })
       if (result && typeof result === 'object' && 'id' in result) {
         setTemplateId(result.id)
         setDraft({ ...result, builtIn: false })
       } else {
         setDraft(undefined)
+        const fallback = templateService.getDefaultId()
+        setDefaultId(fallback)
+        setTemplateId(fallback)
       }
-      setMessage('Template saved.')
+      setMessage(
+        action === 'delete'
+          ? 'Template deleted.'
+          : action === 'duplicate'
+            ? 'Template duplicated.'
+            : 'Template saved.',
+      )
+      setMessageIsError(false)
     },
-    onError: (error) => setMessage(error.message),
+    onError: (error) => {
+      setMessage(error.message)
+      setMessageIsError(true)
+    },
   })
 
   const exportLabels = async (
     action: (labels: RenderedLabel[]) => void | Promise<void>,
   ) => {
     setMessage('')
+    setMessageIsError(false)
+    setExportProgress(0)
+    setExportBusy(true)
     try {
-      const labels = await labelService.renderBatch(inputs)
+      const labels = await labelService.renderBatch(
+        inputs,
+        (completed, total) => {
+          if (completed === total || completed % 10 === 0)
+            setExportProgress(Math.round((completed / total) * 100))
+        },
+      )
       await action(labels)
       setMessage(
         `${labels.length} label${labels.length === 1 ? '' : 's'} prepared.`,
@@ -112,6 +142,35 @@ export function LabelStudioPage() {
       setMessage(
         error instanceof Error ? error.message : 'Label export failed.',
       )
+      setMessageIsError(true)
+    } finally {
+      setExportBusy(false)
+      setExportProgress(undefined)
+    }
+  }
+
+  const printLabels = async () => {
+    setMessage('')
+    setMessageIsError(false)
+    setExportProgress(0)
+    setExportBusy(true)
+    try {
+      const labels = await labelService.printInputs(
+        inputs,
+        (completed, total) => {
+          if (completed === total || completed % 10 === 0)
+            setExportProgress(Math.round((completed / total) * 100))
+        },
+      )
+      setMessage(
+        `${labels.length} label${labels.length === 1 ? '' : 's'} prepared.`,
+      )
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Printing failed.')
+      setMessageIsError(true)
+    } finally {
+      setExportBusy(false)
+      setExportProgress(undefined)
     }
   }
 
@@ -129,6 +188,12 @@ export function LabelStudioPage() {
           >
             {loading ? (
               <div className="h-44 animate-pulse rounded-xl bg-surface-muted" />
+            ) : plants.length === 0 ? (
+              <EmptyState
+                icon={Tags}
+                title="No plants to label"
+                description="Add a plant to your collection, then return here to design and print labels."
+              />
             ) : (
               <PlantBatchSelector
                 plants={plants}
@@ -159,7 +224,14 @@ export function LabelStudioPage() {
                 ))}
               </select>
             </label>
-            {activeTemplate && (
+            {templatesError || tagsError ? (
+              <div
+                role="alert"
+                className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+              >
+                Label data could not be loaded. Check your connection and retry.
+              </div>
+            ) : activeTemplate ? (
               <TemplateEditor
                 template={activeTemplate}
                 isDefault={defaultId === activeTemplate.id}
@@ -172,9 +244,14 @@ export function LabelStudioPage() {
                   templateService.setDefault(activeTemplate.id)
                   setDefaultId(activeTemplate.id)
                   setMessage('Default template updated.')
+                  setMessageIsError(false)
                 }}
               />
-            )}
+            ) : !templatesLoading ? (
+              <p className="text-sm text-muted-foreground">
+                No label templates are available.
+              </p>
+            ) : null}
           </Card>
         </div>
         <div className="space-y-6 xl:sticky xl:top-6 xl:self-start">
@@ -190,16 +267,14 @@ export function LabelStudioPage() {
           >
             <div className="grid gap-2 sm:grid-cols-2">
               <Button
-                disabled={!inputs.length}
-                onClick={() =>
-                  void exportLabels((labels) => labelService.print(labels))
-                }
+                disabled={!inputs.length || exportBusy}
+                onClick={() => void printLabels()}
               >
                 <Printer className="size-4" /> Browser print
               </Button>
               <Button
                 variant="secondary"
-                disabled={!inputs.length}
+                disabled={!inputs.length || exportBusy}
                 onClick={() =>
                   void exportLabels((labels) =>
                     labelService.downloadPdf(labels),
@@ -210,7 +285,7 @@ export function LabelStudioPage() {
               </Button>
               <Button
                 variant="secondary"
-                disabled={!inputs.length}
+                disabled={!inputs.length || exportBusy || inputs.length > 100}
                 onClick={() =>
                   void exportLabels((labels) =>
                     labelService.downloadPng(labels),
@@ -221,7 +296,7 @@ export function LabelStudioPage() {
               </Button>
               <Button
                 variant="secondary"
-                disabled={!inputs.length}
+                disabled={!inputs.length || exportBusy}
                 onClick={() =>
                   void exportLabels((labels) =>
                     labelService.downloadSvg(labels),
@@ -236,10 +311,39 @@ export function LabelStudioPage() {
               margins none, and 100% scale. Each selected plant prints on its
               own page.
             </p>
+            {inputs.length > 250 && (
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                Large batch selected. PDF is recommended; generation is
+                processed in bounded groups and may take several minutes.
+              </p>
+            )}
+            {inputs.length > 100 && (
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                PNG is limited to 100 labels per sheet to stay within browser
+                canvas limits.
+              </p>
+            )}
+            {exportProgress !== undefined && (
+              <div className="mt-4" aria-live="polite">
+                <div className="mb-1 flex justify-between text-xs text-muted-foreground">
+                  <span>Preparing labels</span>
+                  <span>{exportProgress}%</span>
+                </div>
+                <progress
+                  className="h-2 w-full accent-accent"
+                  value={exportProgress}
+                  max="100"
+                />
+              </div>
+            )}
             {message && (
               <p
-                role="status"
-                className="mt-4 rounded-xl bg-surface-muted p-3 text-sm"
+                role={messageIsError ? 'alert' : 'status'}
+                className={
+                  messageIsError
+                    ? 'mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200'
+                    : 'mt-4 rounded-xl bg-surface-muted p-3 text-sm'
+                }
               >
                 {message}
               </p>

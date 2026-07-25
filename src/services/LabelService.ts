@@ -1,6 +1,4 @@
 import JsBarcode from 'jsbarcode'
-import { jsPDF } from 'jspdf'
-
 import type { LabelFieldId, LabelTemplateDefinition, Plant } from '../models'
 import { qrService } from './QRService'
 
@@ -23,6 +21,8 @@ export interface RenderedLabel {
 }
 
 const PX_PER_IN = 100
+const BATCH_CONCURRENCY = 8
+const MAX_RASTER_LABELS = 100
 
 function escapeXml(value: string) {
   return value
@@ -75,7 +75,10 @@ function labelFor(field: LabelFieldId) {
 }
 
 function truncate(value: string, length: number) {
-  return value.length > length ? `${value.slice(0, length - 1)}…` : value
+  const characters = Array.from(value)
+  return characters.length > length
+    ? `${characters.slice(0, length - 1).join('')}…`
+    : value
 }
 
 function nestedSvg(svg: string, x: number, y: number, size: number) {
@@ -194,11 +197,66 @@ export class LabelService {
     }
   }
 
-  renderBatch(inputs: LabelRenderInput[]) {
-    return Promise.all(inputs.map((input) => this.render(input)))
+  async renderBatch(
+    inputs: LabelRenderInput[],
+    onProgress?: (completed: number, total: number) => void,
+  ) {
+    const labels = new Array<RenderedLabel>(inputs.length)
+    let nextIndex = 0
+    let completed = 0
+    const worker = async () => {
+      while (nextIndex < inputs.length) {
+        const index = nextIndex++
+        labels[index] = await this.render(inputs[index]!)
+        completed += 1
+        onProgress?.(completed, inputs.length)
+        if (completed % 25 === 0)
+          await new Promise<void>((resolve) => setTimeout(resolve, 0))
+      }
+    }
+    await Promise.all(
+      Array.from(
+        { length: Math.min(BATCH_CONCURRENCY, inputs.length) },
+        worker,
+      ),
+    )
+    return labels
   }
 
   print(labels: RenderedLabel[]) {
+    const printWindow = this.openPrintWindow()
+    this.writePrintDocument(printWindow, labels)
+  }
+
+  async printInputs(
+    inputs: LabelRenderInput[],
+    onProgress?: (completed: number, total: number) => void,
+  ) {
+    const printWindow = this.openPrintWindow()
+    printWindow.document.write(
+      '<!doctype html><title>Preparing Orchard labels</title><p style="font:16px system-ui;padding:24px">Preparing labels…</p>',
+    )
+    try {
+      const labels = await this.renderBatch(inputs, onProgress)
+      printWindow.document.open()
+      this.writePrintDocument(printWindow, labels)
+      return labels
+    } catch (error) {
+      printWindow.close()
+      throw error
+    }
+  }
+
+  private openPrintWindow() {
+    // The new window must remain script-accessible so this service can write the
+    // isolated print document. It contains only generated, XML-escaped content.
+    const printWindow = window.open('', '_blank')
+    if (!printWindow)
+      throw new Error('Allow pop-ups to open the label print preview.')
+    return printWindow
+  }
+
+  private writePrintDocument(printWindow: Window, labels: RenderedLabel[]) {
     if (!labels.length) throw new Error('Select at least one label to print.')
     const first = labels[0]!
     if (
@@ -208,11 +266,6 @@ export class LabelService {
       )
     )
       throw new Error('A print batch must use one label size.')
-    // The new window must remain script-accessible so this service can write the
-    // isolated print document. It contains only generated, XML-escaped content.
-    const printWindow = window.open('', '_blank')
-    if (!printWindow)
-      throw new Error('Allow pop-ups to open the label print preview.')
     printWindow.document.write(
       `<!doctype html><html><head><title>Orchard labels</title><style>@page{size:${first.widthIn}in ${first.heightIn}in;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0}.label{width:${first.widthIn}in;height:${first.heightIn}in;overflow:hidden;break-after:page;page-break-after:always}.label:last-child{break-after:avoid;page-break-after:avoid}.label svg{display:block;width:100%;height:100%}</style></head><body>${labels.map((label) => `<div class="label">${label.svg}</div>`).join('')}</body></html>`,
     )
@@ -230,6 +283,10 @@ export class LabelService {
   }
 
   async downloadPng(labels: RenderedLabel[], filename = 'orchard-labels.png') {
+    if (labels.length > MAX_RASTER_LABELS)
+      throw new Error(
+        `PNG sheets support up to ${MAX_RASTER_LABELS} labels. Use PDF for this batch.`,
+      )
     const dataUrl = await this.rasterize(this.compositeSvg(labels), 3)
     this.downloadDataUrl(dataUrl, filename)
   }
@@ -239,6 +296,7 @@ export class LabelService {
     const first = labels[0]!
     const orientation =
       first.widthIn >= first.heightIn ? 'landscape' : 'portrait'
+    const { jsPDF } = await import('jspdf')
     const pdf = new jsPDF({
       unit: 'in',
       format: [first.widthIn, first.heightIn],
