@@ -11,6 +11,7 @@ import type {
   InventoryTransaction,
   MaintenanceLog,
   MediaAsset,
+  LabelTemplate,
   NfcTag,
   Plant,
   Space,
@@ -55,6 +56,7 @@ export class OrchardDatabase extends Dexie {
   feedingLogs!: Table<FeedingLog, string>
   feederSettings!: Table<FeederSettings, string>
   nfcTags!: Table<NfcTag, string>
+  labelTemplates!: Table<LabelTemplate, string>
 
   constructor() {
     super('orchard-collection')
@@ -172,6 +174,10 @@ export class OrchardDatabase extends Dexie {
             tag.scanCount ??= 0
           })
       })
+
+    this.version(10).stores({
+      labelTemplates: 'id, &name, createdAt, updatedAt',
+    })
   }
 }
 

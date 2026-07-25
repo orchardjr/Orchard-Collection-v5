@@ -6,6 +6,7 @@ import {
   cloudTimelineRepository,
 } from '../../data/cloudRepositories'
 import { cloudMediaRepository } from '../../data/CloudMediaRepository'
+import { cloudLabelTemplateRepository } from '../../data/CloudLabelTemplateRepository'
 import { cloudNfcTagRepository } from '../../data/CloudNfcTagRepository'
 import {
   cloudCricketBatchRepository,
@@ -30,6 +31,7 @@ import {
   maintenanceLogRepository as localMaintenanceLogRepository,
 } from './FeederRepositories'
 import { mediaRepository as localMediaRepository } from './MediaRepository'
+import { localLabelTemplateRepository } from './LabelTemplateRepository'
 import { localNfcTagRepository } from './NfcTagRepository'
 import { plantRepository as localPlantRepository } from './PlantRepository'
 import { spaceRepository as localSpaceRepository } from './SpaceRepository'
@@ -37,6 +39,7 @@ import { taskRepository as localTaskRepository } from './TaskRepository'
 import { timelineRepository as localTimelineRepository } from './TimelineRepository'
 
 export { MediaRepository } from './MediaRepository'
+export { LabelTemplateRepository } from './LabelTemplateRepository'
 export { NfcTagRepository } from './NfcTagRepository'
 export { PlantRepository } from './PlantRepository'
 export { SpaceRepository } from './SpaceRepository'
@@ -87,5 +90,8 @@ export const feederSettingsRepository = isSupabaseConfigured
 export const nfcTagRepository = isSupabaseConfigured
   ? cloudNfcTagRepository
   : localNfcTagRepository
+export const labelTemplateRepository = isSupabaseConfigured
+  ? cloudLabelTemplateRepository
+  : localLabelTemplateRepository
 export type { CreateInput, UpdateInput } from './BaseRepository'
 export type { AssignNfcTagInput } from './NfcTagRepository'
