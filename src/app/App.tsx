@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ComponentType } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { matchPath, Route, Routes, useLocation } from 'react-router-dom'
 
 import { RepositoryErrorBoundary } from '../components/errors/RepositoryErrorBoundary'
 import { AuthGate } from '../auth/AuthGate'
@@ -89,6 +89,10 @@ const DymoPrintPage = page(
   () => import('../pages/feeders/DymoPrintPage'),
   'DymoPrintPage',
 )
+const NfcResolvePage = page(
+  () => import('../pages/NfcResolvePage'),
+  'NfcResolvePage',
+)
 
 function RouteFallback() {
   return (
@@ -100,6 +104,16 @@ function RouteFallback() {
 }
 
 export function App() {
+  const location = useLocation()
+  if (matchPath('/nfc/:token', location.pathname))
+    return (
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          <Route path="nfc/:token" element={<NfcResolvePage />} />
+        </Routes>
+      </Suspense>
+    )
+
   return (
     <AuthGate>
       <LegacyImportGate>

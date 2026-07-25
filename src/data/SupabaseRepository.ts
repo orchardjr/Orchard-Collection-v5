@@ -37,6 +37,9 @@ const dateKeys = new Set([
   'datePurchased',
   'gutLoadStartedAt',
   'useByAt',
+  'assignedAt',
+  'lastScannedAt',
+  'firstScannedAt',
 ])
 
 function camel(value: string) {
