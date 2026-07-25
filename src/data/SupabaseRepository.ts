@@ -91,8 +91,31 @@ export function assertOnline() {
     )
 }
 
-function repositoryError(action: string) {
-  return new Error(`Cloud ${action} failed. Check your connection and retry.`)
+interface SupabaseErrorDetails {
+  code?: string
+  message?: string
+  details?: string
+  hint?: string
+}
+
+export function repositoryError(
+  action: string,
+  error?: SupabaseErrorDetails | null,
+  development = import.meta.env.DEV,
+) {
+  const friendly = `Cloud ${action} failed. Check your connection and retry.`
+  if (!development || !error) return new Error(friendly)
+  const diagnostic = [
+    error.code ? `[${error.code}]` : undefined,
+    error.message,
+    error.details,
+    error.hint,
+  ]
+    .filter(Boolean)
+    .join(' ')
+  return new Error(diagnostic ? `${friendly} ${diagnostic}` : friendly, {
+    cause: error,
+  })
 }
 
 export class SupabaseRepository<T extends BaseRecord> implements Repository<T> {
@@ -104,7 +127,7 @@ export class SupabaseRepository<T extends BaseRecord> implements Repository<T> {
       .from(this.table)
       .select('*')
       .order('created_at')
-    if (error) throw repositoryError('read')
+    if (error) throw repositoryError('read', error)
     return (data ?? []).map((row) => fromSupabaseRow<T>(row))
   }
 
@@ -115,7 +138,7 @@ export class SupabaseRepository<T extends BaseRecord> implements Repository<T> {
       .select('*')
       .eq('id', id)
       .maybeSingle()
-    if (error) throw repositoryError('read')
+    if (error) throw repositoryError('read', error)
     return data ? fromSupabaseRow<T>(data) : undefined
   }
 
@@ -128,7 +151,7 @@ export class SupabaseRepository<T extends BaseRecord> implements Repository<T> {
       .insert(row)
       .select('*')
       .single()
-    if (error) throw repositoryError('write')
+    if (error) throw repositoryError('write', error)
     return fromSupabaseRow<T>(data)
   }
 
@@ -141,7 +164,7 @@ export class SupabaseRepository<T extends BaseRecord> implements Repository<T> {
       .eq('id', id)
       .select('*')
       .maybeSingle()
-    if (error) throw repositoryError('write')
+    if (error) throw repositoryError('write', error)
     return data ? fromSupabaseRow<T>(data) : undefined
   }
 
@@ -151,6 +174,6 @@ export class SupabaseRepository<T extends BaseRecord> implements Repository<T> {
       .from(this.table)
       .delete()
       .eq('id', id)
-    if (error) throw repositoryError('delete')
+    if (error) throw repositoryError('delete', error)
   }
 }
