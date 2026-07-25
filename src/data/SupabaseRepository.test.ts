@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   assertOnline,
   fromSupabaseRow,
+  repositoryError,
   toSupabaseRow,
 } from './SupabaseRepository'
 
@@ -43,5 +44,30 @@ describe('offline cloud writes', () => {
     vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false)
     expect(() => assertOnline()).toThrow(/offline/i)
     vi.restoreAllMocks()
+  })
+})
+
+describe('cloud repository diagnostics', () => {
+  it('includes Supabase diagnostics in development errors', () => {
+    const error = repositoryError('write', {
+      code: '22P02',
+      message: 'invalid input syntax for type uuid: "feeder-species-1"',
+    })
+    expect(error.message).toContain('[22P02]')
+    expect(error.message).toContain('invalid input syntax for type uuid')
+  })
+
+  it('keeps production errors user-friendly', () => {
+    const error = repositoryError(
+      'write',
+      {
+        code: '22P02',
+        message: 'raw database error',
+      },
+      false,
+    )
+    expect(error.message).toBe(
+      'Cloud write failed. Check your connection and retry.',
+    )
   })
 })
