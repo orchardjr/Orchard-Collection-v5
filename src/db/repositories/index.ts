@@ -6,6 +6,7 @@ import {
   cloudTimelineRepository,
 } from '../../data/cloudRepositories'
 import { cloudMediaRepository } from '../../data/CloudMediaRepository'
+import { cloudNfcTagRepository } from '../../data/CloudNfcTagRepository'
 import {
   cloudCricketBatchRepository,
   cloudFeederColonyRepository,
@@ -29,12 +30,14 @@ import {
   maintenanceLogRepository as localMaintenanceLogRepository,
 } from './FeederRepositories'
 import { mediaRepository as localMediaRepository } from './MediaRepository'
+import { localNfcTagRepository } from './NfcTagRepository'
 import { plantRepository as localPlantRepository } from './PlantRepository'
 import { spaceRepository as localSpaceRepository } from './SpaceRepository'
 import { taskRepository as localTaskRepository } from './TaskRepository'
 import { timelineRepository as localTimelineRepository } from './TimelineRepository'
 
 export { MediaRepository } from './MediaRepository'
+export { NfcTagRepository } from './NfcTagRepository'
 export { PlantRepository } from './PlantRepository'
 export { SpaceRepository } from './SpaceRepository'
 export { TaskRepository } from './TaskRepository'
@@ -81,4 +84,8 @@ export const feedingLogRepository = isSupabaseConfigured
 export const feederSettingsRepository = isSupabaseConfigured
   ? cloudFeederSettingsRepository
   : localFeederSettingsRepository
+export const nfcTagRepository = isSupabaseConfigured
+  ? cloudNfcTagRepository
+  : localNfcTagRepository
 export type { CreateInput, UpdateInput } from './BaseRepository'
+export type { AssignNfcTagInput } from './NfcTagRepository'

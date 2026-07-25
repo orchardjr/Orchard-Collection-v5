@@ -16,12 +16,15 @@ import {
 import { TimelineTab } from '../features/plant-details/tabs/TimelineTab'
 import { TasksTab } from '../features/plant-details/tabs/TasksTab'
 import { PlantDetailsHero } from '../features/plant-details/PlantDetailsHero'
+import { NfcTagSection } from '../features/nfc/NfcTagSection'
 import {
   PlantDetailsTabs,
   type PlantDetailsTabId,
 } from '../features/plant-details/PlantDetailsTabs'
 import {
   usePlant,
+  usePlantNfcTag,
+  useNfcTagMutations,
   usePlantMedia,
   usePlantMutations,
   usePlantTimeline,
@@ -40,6 +43,8 @@ export function PlantDetailsPage() {
   const { data: spaces = [] } = useSpaces()
   const { data: tasks = [] } = useTasks()
   const { data: plants = [] } = usePlants()
+  const { data: nfcTag, isLoading: nfcLoading } = usePlantNfcTag(plantId)
+  const { assignTag, replaceTag, unassignTag } = useNfcTagMutations()
   const [activeTab, setActiveTab] = useState<PlantDetailsTabId>('overview')
 
   if (isLoading) return <PlantDetailsLoading />
@@ -72,10 +77,49 @@ export function PlantDetailsPage() {
 
   const content: Record<PlantDetailsTabId, ReactNode> = {
     overview: (
-      <OverviewTab
-        plant={plant}
-        spaceName={spaces.find((space) => space.id === plant.spaceId)?.name}
-      />
+      <div className="space-y-6">
+        <OverviewTab
+          plant={plant}
+          spaceName={spaces.find((space) => space.id === plant.spaceId)?.name}
+        />
+        <NfcTagSection
+          plantName={plant.nickname}
+          tag={nfcTag}
+          loading={nfcLoading}
+          pending={
+            assignTag.isPending || replaceTag.isPending || unassignTag.isPending
+          }
+          error={
+            (assignTag.error ?? replaceTag.error ?? unassignTag.error)?.message
+          }
+          onResetError={() => {
+            assignTag.reset()
+            replaceTag.reset()
+            unassignTag.reset()
+          }}
+          onAssign={(input) =>
+            assignTag
+              .mutateAsync({
+                ...input,
+                resourceType: 'plant',
+                resourceId: plant.id,
+              })
+              .then(() => undefined)
+          }
+          onReplace={() =>
+            replaceTag
+              .mutateAsync({
+                id: nfcTag!.id,
+                nickname: nfcTag?.nickname,
+                notes: nfcTag?.notes,
+              })
+              .then(() => undefined)
+          }
+          onRemove={() =>
+            unassignTag.mutateAsync(nfcTag!.id).then(() => undefined)
+          }
+        />
+      </div>
     ),
     timeline: timelineLoading ? (
       <TabLoading label="timeline" />

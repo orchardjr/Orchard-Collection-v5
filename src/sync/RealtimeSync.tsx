@@ -19,6 +19,7 @@ const syncedTables = [
   'harvest_logs',
   'feeding_logs',
   'feeder_settings',
+  'nfc_tags',
 ] as const
 
 export function RealtimeSync({ children }: PropsWithChildren) {

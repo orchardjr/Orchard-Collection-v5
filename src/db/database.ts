@@ -11,6 +11,7 @@ import type {
   InventoryTransaction,
   MaintenanceLog,
   MediaAsset,
+  NfcTag,
   Plant,
   Space,
   Task,
@@ -53,6 +54,7 @@ export class OrchardDatabase extends Dexie {
   harvestLogs!: Table<HarvestLog, string>
   feedingLogs!: Table<FeedingLog, string>
   feederSettings!: Table<FeederSettings, string>
+  nfcTags!: Table<NfcTag, string>
 
   constructor() {
     super('orchard-collection')
@@ -151,6 +153,11 @@ export class OrchardDatabase extends Dexie {
             task.recurrence ??= 'none'
           })
       })
+
+    this.version(8).stores({
+      nfcTags:
+        'id, &publicToken, resourceType, resourceId, &uid, assignedAt, lastScannedAt, createdAt',
+    })
   }
 }
 

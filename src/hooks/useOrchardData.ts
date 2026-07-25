@@ -7,6 +7,7 @@ import {
   spaceRepository,
   taskRepository,
   timelineRepository,
+  nfcTagRepository,
 } from '../db/repositories'
 import type { CreateInput, UpdateInput } from '../db/repositories'
 import type { MediaAsset, Plant, Space, Task, TimelineEvent } from '../models'
@@ -15,6 +16,7 @@ import { plantService } from '../services/PlantService'
 import { spaceService } from '../services/SpaceService'
 import { taskService } from '../services/TaskService'
 import { timelineService } from '../services/TimelineService'
+import { nfcTagService } from '../services/NfcTagService'
 import { isSupabaseConfigured } from '../lib/supabase'
 
 async function prepareData() {
@@ -161,6 +163,49 @@ export function usePlant(id: string | undefined) {
     enabled: Boolean(id),
     throwOnError: true,
   })
+}
+
+export function usePlantNfcTag(plantId: string | undefined) {
+  return useQuery({
+    queryKey: ['nfc-tags', 'plant', plantId],
+    queryFn: () =>
+      plantId
+        ? nfcTagRepository.findAssigned('plant', plantId)
+        : Promise.resolve(undefined),
+    enabled: Boolean(plantId),
+    throwOnError: true,
+  })
+}
+
+export function useNfcTagMutations() {
+  const queryClient = useQueryClient()
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: ['nfc-tags'] })
+
+  return {
+    assignTag: useMutation({
+      mutationFn: nfcTagService.assignTag.bind(nfcTagService),
+      onSuccess: refresh,
+    }),
+    unassignTag: useMutation({
+      mutationFn: nfcTagService.unassignTag.bind(nfcTagService),
+      onSuccess: refresh,
+    }),
+    replaceTag: useMutation({
+      mutationFn: ({
+        id,
+        nickname,
+        notes,
+        uid,
+      }: {
+        id: string
+        nickname?: string
+        notes?: string
+        uid?: string
+      }) => nfcTagService.replaceTag(id, { nickname, notes, uid }),
+      onSuccess: refresh,
+    }),
+  }
 }
 
 export function usePlantTimeline(plantId: string | undefined) {
