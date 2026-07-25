@@ -1,7 +1,7 @@
 # NFC Tag System — Phase 1
 
-Phase 1 provides permanent, reusable NFC tag records and public URLs. It does
-not write to physical NFC hardware.
+Phase 1 provides permanent, reusable NFC tag records and public URLs. Phase 2
+adds optional Web NFC reading, writing, and read-back verification.
 
 ## Assigning a plant tag
 
@@ -10,8 +10,13 @@ not write to physical NFC hardware.
 3. Optionally enter a nickname, manufacturer UID, and notes.
 4. Save the tag, then copy its permanent `/nfc/:token` URL.
 
-The URL can be encoded into an NFC tag later with any compatible writer. Native
-Web NFC writing is intentionally outside Phase 1.
+On a supported secure-context browser, **Write NFC Tag** encodes only the
+canonical `https://app.orchardcollection.ca/nfc/<token>` URL and then asks for
+the tag again to verify the stored value. **Read NFC Tag** displays the URL,
+available UID, tag type, and NDEF records.
+
+Web NFC capability is detected from `NDEFReader`; browsers are not identified
+by name. Unsupported browsers retain URL copying and QR-code download.
 
 Replacing a tag creates a new token and leaves the old record unassigned for
 auditability. Removing a tag also unassigns rather than deleting it.
@@ -43,8 +48,9 @@ Rollback (only before tags are in use):
 The rollback deletes the NFC table and must not be run against production data
 without a backup and explicit approval.
 
-## Future Web NFC
+## Web NFC safety
 
-A future writer can encode the existing public URL and store a hardware `uid`
-through the repository. No schema change is required to add Web NFC support or
-new resource types; new types need only resource validation and UI routing.
+Hardware actions require HTTPS and browser permission. Rewriting requires
+confirmation. Cancellation, permission denial, write failures, and read-back
+mismatches are surfaced without changing the database assignment. Internal
+database IDs are never written to a tag.

@@ -5,7 +5,9 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { PropertyField } from '../../components/ui/PropertyField'
 import type { NfcTag } from '../../models'
+import { orchardNfcUrl } from '../../services/NfcHardwareService'
 import { AssignNfcTagDialog } from './AssignNfcTagDialog'
+import { NfcHardwarePanel } from './NfcHardwarePanel'
 
 interface NfcTagSectionProps {
   plantName: string
@@ -21,10 +23,6 @@ interface NfcTagSectionProps {
   onReplace: () => Promise<void>
   onRemove: () => Promise<void>
   onResetError: () => void
-}
-
-function publicUrl(token: string) {
-  return `${window.location.origin}/nfc/${token}`
 }
 
 export function NfcTagSection({
@@ -86,7 +84,7 @@ export function NfcTagSection({
       </>
     )
 
-  const url = publicUrl(tag.publicToken)
+  const url = orchardNfcUrl(tag.publicToken)
   return (
     <Card
       title="NFC Tag"
@@ -175,6 +173,7 @@ export function NfcTagSection({
           {error}
         </p>
       )}
+      <NfcHardwarePanel publicToken={tag.publicToken} />
     </Card>
   )
 }
