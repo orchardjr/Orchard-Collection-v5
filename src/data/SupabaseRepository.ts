@@ -107,7 +107,8 @@ export function repositoryError(
   development = import.meta.env.DEV,
 ) {
   const friendly = `Cloud ${action} failed. Check your connection and retry.`
-  if (!development || !error) return new Error(friendly)
+  if (!error) return new Error(friendly)
+  if (!development) return new Error(friendly, { cause: error })
   const diagnostic = [
     error.code ? `[${error.code}]` : undefined,
     error.message,

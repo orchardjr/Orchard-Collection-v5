@@ -35,30 +35,43 @@ const readPlants = () =>
     () => plantRepository.getAll(),
     () => localPlantRepository.getAll(),
     isSupabaseConfigured,
+    { repository: 'plants', operation: 'getAll', query: 'select *' },
   )
 const readSpaces = () =>
   readWithLocalFallback(
     () => spaceRepository.getAll(),
     () => localSpaceRepository.getAll(),
     isSupabaseConfigured,
+    { repository: 'spaces', operation: 'getAll', query: 'select *' },
   )
 const readTasks = () =>
   readWithLocalFallback(
     () => taskRepository.getAll(),
     () => localTaskRepository.getAll(),
     isSupabaseConfigured,
+    { repository: 'tasks', operation: 'getAll', query: 'select *' },
   )
 const readTimeline = () =>
   readWithLocalFallback(
     () => timelineRepository.getAll(),
     () => localTimelineRepository.getAll(),
     isSupabaseConfigured,
+    {
+      repository: 'timeline_events',
+      operation: 'getAll',
+      query: 'select *',
+    },
   )
 const readMedia = () =>
   readWithLocalFallback(
     () => mediaRepository.getAll(),
     () => localMediaRepository.getAll(),
     isSupabaseConfigured,
+    {
+      repository: 'plant_media',
+      operation: 'getAll',
+      query: 'select * order by uploaded_at desc',
+    },
   )
 
 export function useSpaces() {
@@ -205,6 +218,11 @@ export function usePlant(id: string | undefined) {
             () => plantRepository.getById(id),
             () => localPlantRepository.getById(id),
             isSupabaseConfigured,
+            {
+              repository: 'plants',
+              operation: 'getById',
+              query: 'select * where id = :id',
+            },
           )
         : undefined
     },
@@ -222,6 +240,12 @@ export function usePlantNfcTag(plantId: string | undefined) {
             () => nfcTagRepository.findAssigned('plant', plantId),
             () => localNfcTagRepository.findAssigned('plant', plantId),
             isSupabaseConfigured,
+            {
+              repository: 'nfc_tags',
+              operation: 'findAssigned',
+              query:
+                'select * where resource_type = plant and resource_id = :id',
+            },
           )
         : Promise.resolve(undefined),
     enabled: Boolean(plantId),
@@ -270,6 +294,11 @@ export function usePlantTimeline(plantId: string | undefined) {
             () => timelineRepository.getByPlantId(plantId),
             () => localTimelineRepository.getByPlantId(plantId),
             isSupabaseConfigured,
+            {
+              repository: 'timeline_events',
+              operation: 'getByPlantId',
+              query: 'select * where plant_id = :plantId',
+            },
           )
         : []
     },
@@ -288,6 +317,11 @@ export function usePlantMedia(plantId: string | undefined) {
             () => mediaRepository.getByPlantId(plantId),
             () => localMediaRepository.getByPlantId(plantId),
             isSupabaseConfigured,
+            {
+              repository: 'plant_media',
+              operation: 'getByPlantId',
+              query: 'select * where plant_id = :plantId',
+            },
           )
         : []
     },
