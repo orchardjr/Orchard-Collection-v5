@@ -13,6 +13,7 @@ interface NfcTagSectionProps {
   plantName: string
   tag?: NfcTag
   loading: boolean
+  loadError?: string
   pending: boolean
   error?: string
   onAssign: (input: {
@@ -27,6 +28,7 @@ interface NfcTagSectionProps {
 
 export function NfcTagSection({
   error,
+  loadError,
   loading,
   onAssign,
   onRemove,
@@ -43,6 +45,20 @@ export function NfcTagSection({
     return (
       <Card title="NFC Tag">
         <div className="h-28 animate-pulse rounded-2xl bg-surface-muted" />
+      </Card>
+    )
+
+  if (loadError)
+    return (
+      <Card
+        title="NFC Tag"
+        description="NFC features are temporarily unavailable."
+      >
+        <p role="alert" className="text-sm leading-6 text-muted-foreground">
+          This plant is still available, but its NFC tag could not be loaded.
+          The NFC database setup may still be pending. Try again after the cloud
+          schema is updated.
+        </p>
       </Card>
     )
 
