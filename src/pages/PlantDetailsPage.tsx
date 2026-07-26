@@ -88,7 +88,7 @@ export function PlantDetailsPage() {
         />
         <NfcTagSection
           plantName={plant.nickname}
-          tag={nfcTag}
+          tag={nfcTag ?? undefined}
           loading={nfcLoading}
           loadError={nfcLoadError}
           pending={

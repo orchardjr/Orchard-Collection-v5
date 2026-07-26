@@ -27,6 +27,7 @@ import { isSupabaseConfigured } from '../lib/supabase'
 import { isUuid } from '../lib/isUuid'
 import { readWithLocalFallback } from '../data/readWithLocalFallback'
 import { safeCloudError } from '../data/collectionReadDiagnostics'
+import { normalizeNfcTagQueryResult } from '../features/nfc/nfcQueryResult'
 
 async function prepareData() {
   if (!isSupabaseConfigured) await ensureSeedData()
@@ -240,19 +241,21 @@ export function usePlantNfcTag(plantId: string | undefined) {
       if (!plantId) return undefined
       const source = isUuid(plantId) ? 'cloud-with-local-fallback' : 'local'
       try {
-        return source === 'local'
-          ? await localNfcTagRepository.findAssigned('plant', plantId)
-          : await readWithLocalFallback(
-              () => nfcTagRepository.findAssigned('plant', plantId),
-              () => localNfcTagRepository.findAssigned('plant', plantId),
-              isSupabaseConfigured,
-              {
-                repository: 'nfc_tags',
-                operation: 'findAssigned',
-                query:
-                  'select * where resource_type = plant and resource_id = :id',
-              },
-            )
+        const tag =
+          source === 'local'
+            ? await localNfcTagRepository.findAssigned('plant', plantId)
+            : await readWithLocalFallback(
+                () => nfcTagRepository.findAssigned('plant', plantId),
+                () => localNfcTagRepository.findAssigned('plant', plantId),
+                isSupabaseConfigured,
+                {
+                  repository: 'nfc_tags',
+                  operation: 'findAssigned',
+                  query:
+                    'select * where resource_type = plant and resource_id = :id',
+                },
+              )
+        return normalizeNfcTagQueryResult(tag)
       } catch (error) {
         console.error('orchard.nfc-read', {
           repository: 'nfc_tags',
