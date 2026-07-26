@@ -65,5 +65,20 @@ export function describeNfcDependencyError(error: unknown) {
   const suffix = [status ? `HTTP ${status}` : undefined, code]
     .filter(Boolean)
     .join(' / ')
-  return `NFC tags could not be loaded${suffix ? ` (${suffix})` : ''}. Check the NFC database dependency and try again.`
+  const concrete = chain.find(
+    ({ message }) =>
+      message &&
+      !/^Cloud read failed\. Check your connection and retry\.$/.test(message),
+  )
+  const detail =
+    concrete?.message ??
+    (typeof error === 'string'
+      ? error
+      : error instanceof Error
+        ? error.message
+        : undefined)
+  const identity = [concrete?.name, suffix || undefined]
+    .filter(Boolean)
+    .join(' / ')
+  return `NFC tags could not be loaded${identity ? ` (${identity})` : ''}${detail ? `: ${detail}` : '.'}`
 }
