@@ -8,12 +8,13 @@ import type { NfcTag } from '../../models'
 import { orchardNfcUrl } from '../../services/NfcHardwareService'
 import { AssignNfcTagDialog } from './AssignNfcTagDialog'
 import { NfcHardwarePanel } from './NfcHardwarePanel'
+import { describeNfcDependencyError } from './nfcDependencyError'
 
 interface NfcTagSectionProps {
   plantName: string
   tag?: NfcTag
   loading: boolean
-  loadError?: string
+  loadError?: unknown
   pending: boolean
   error?: string
   onAssign: (input: {
@@ -55,9 +56,7 @@ export function NfcTagSection({
         description="NFC features are temporarily unavailable."
       >
         <p role="alert" className="text-sm leading-6 text-muted-foreground">
-          This plant is still available, but its NFC tag could not be loaded.
-          The NFC database setup may still be pending. Try again after the cloud
-          schema is updated.
+          This plant is still available. {describeNfcDependencyError(loadError)}
         </p>
       </Card>
     )

@@ -90,7 +90,7 @@ export function PlantDetailsPage() {
           plantName={plant.nickname}
           tag={nfcTag}
           loading={nfcLoading}
-          loadError={nfcLoadError?.message}
+          loadError={nfcLoadError}
           pending={
             assignTag.isPending || replaceTag.isPending || unassignTag.isPending
           }
