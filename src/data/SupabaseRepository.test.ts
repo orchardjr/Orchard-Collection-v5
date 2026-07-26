@@ -58,16 +58,14 @@ describe('cloud repository diagnostics', () => {
   })
 
   it('keeps production errors user-friendly', () => {
-    const error = repositoryError(
-      'write',
-      {
-        code: '22P02',
-        message: 'raw database error',
-      },
-      false,
-    )
+    const cause = {
+      code: '22P02',
+      message: 'raw database error',
+    }
+    const error = repositoryError('write', cause, false)
     expect(error.message).toBe(
       'Cloud write failed. Check your connection and retry.',
     )
+    expect(error.cause).toBe(cause)
   })
 })

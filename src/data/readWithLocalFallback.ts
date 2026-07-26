@@ -1,66 +1,91 @@
-interface CloudReadError {
-  status?: number
-  statusCode?: number | string
-  code?: string
-  message?: string
-  cause?: unknown
+import { db } from '../db/database'
+import {
+  classifyCloudRead,
+  reportCollectionRead,
+  safeCloudError,
+  type CollectionReadDiagnostic,
+} from './collectionReadDiagnostics'
+import { isLocalCollectionMode } from './localCollectionMode'
+
+export interface CollectionReadContext {
+  repository: string
+  operation: string
+  query?: string
 }
 
-function errorChain(error: unknown) {
-  const chain: CloudReadError[] = []
-  let current = error
-  const seen = new Set<unknown>()
-  while (
-    current &&
-    typeof current === 'object' &&
-    !seen.has(current) &&
-    chain.length < 5
-  ) {
-    seen.add(current)
-    const candidate = current as CloudReadError
-    chain.push(candidate)
-    current = candidate.cause
-  }
-  return chain
+function recordCount(value: unknown) {
+  return Array.isArray(value) ? value.length : value === undefined ? 0 : 1
 }
 
 export function canUseLocalReadFallback(error: unknown) {
-  if (error instanceof TypeError) return true
-  return errorChain(error).some((candidate) => {
-    const status = Number(candidate.status ?? candidate.statusCode)
-    const code = candidate.code?.toUpperCase()
-    const message = candidate.message?.toLowerCase() ?? ''
-    return (
-      status === 401 ||
-      status === 403 ||
-      (status !== undefined && status >= 500) ||
-      code === '42501' ||
-      code === 'PGRST301' ||
-      message.includes('forbidden') ||
-      message.includes('permission denied') ||
-      message.includes('failed to fetch') ||
-      message.includes('network')
-    )
-  })
+  const category = classifyCloudRead(safeCloudError(error))
+  return (
+    category === 'authorization' ||
+    category === 'network' ||
+    category === 'server'
+  )
 }
 
 export async function readWithLocalFallback<T>(
   cloudRead: () => Promise<T>,
   localRead: () => Promise<T>,
   cloudEnabled: boolean,
+  context: CollectionReadContext = {
+    repository: 'unknown',
+    operation: 'read',
+  },
 ) {
-  const readLocal = async () => {
+  const readLocal = async (
+    diagnostic: CollectionReadDiagnostic,
+    log: typeof console.error = console.error,
+  ) => {
+    diagnostic.fallbackAttempted = true
+    try {
+      if (!db.isOpen()) await db.open()
+      diagnostic.dexieOpened = db.isOpen()
+      const records = await localRead()
+      diagnostic.localRecordCount = recordCount(records)
+      reportCollectionRead(diagnostic, log)
+      return records
+    } catch (error) {
+      diagnostic.dexieOpened = db.isOpen()
+      diagnostic.fallbackError = safeCloudError(error)
+      reportCollectionRead(diagnostic)
+      throw error
+    }
+  }
+
+  if (!cloudEnabled) {
     if (!db.isOpen()) await db.open()
     return localRead()
   }
-  if (!cloudEnabled) return readLocal()
+  if (isLocalCollectionMode())
+    return readLocal(
+      {
+        ...context,
+        category: 'local-only',
+        fallbackAttempted: false,
+        timestamp: new Date().toISOString(),
+      },
+      console.info,
+    )
+
   try {
     return await cloudRead()
   } catch (error) {
-    if (!canUseLocalReadFallback(error)) throw error
-    if (import.meta.env.DEV)
-      console.warn('Cloud read unavailable; using local Orchard data.', error)
-    return readLocal()
+    const captured = safeCloudError(error)
+    const category = classifyCloudRead(captured)
+    const diagnostic: CollectionReadDiagnostic = {
+      ...context,
+      category,
+      error: captured,
+      fallbackAttempted: false,
+      timestamp: new Date().toISOString(),
+    }
+    if (!canUseLocalReadFallback(error)) {
+      reportCollectionRead(diagnostic)
+      throw error
+    }
+    return readLocal(diagnostic)
   }
 }
-import { db } from '../db/database'
