@@ -9,7 +9,15 @@ describe('NfcTagSection', () => {
       <NfcTagSection
         plantName="Monstera"
         loading={false}
-        loadError="Cloud read failed. Check your connection and retry."
+        loadError={
+          new Error('Cloud read failed', {
+            cause: {
+              code: 'PGRST205',
+              message:
+                "Could not find the table 'public.nfc_tags' in the schema cache",
+            },
+          })
+        }
         pending={false}
         onAssign={vi.fn()}
         onReplace={vi.fn()}
@@ -21,7 +29,9 @@ describe('NfcTagSection', () => {
     expect(
       screen.getByText(/NFC features are temporarily unavailable/i),
     ).toBeTruthy()
-    expect(screen.getByText(/This plant is still available/i)).toBeTruthy()
+    expect(
+      screen.getByText(/cloud database is missing the nfc_tags table/i),
+    ).toBeTruthy()
     expect(screen.queryByRole('button', { name: /Assign NFC Tag/i })).toBeNull()
   })
 })
