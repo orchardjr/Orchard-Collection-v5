@@ -8,7 +8,11 @@ export class QRService {
   }
 
   toSvg(publicToken: string) {
-    return QRCode.toString(this.url(publicToken), {
+    return this.toSvgUrl(this.url(publicToken))
+  }
+
+  toSvgUrl(url: string) {
+    return QRCode.toString(url, {
       type: 'svg',
       errorCorrectionLevel: 'Q',
       margin: 2,

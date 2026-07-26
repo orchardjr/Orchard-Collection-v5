@@ -135,6 +135,38 @@ export type EditableTemplate = Omit<
   'id' | 'createdAt' | 'updatedAt'
 >
 
+const labelFieldIds = new Set<LabelFieldId>([
+  'plantName',
+  'scientificName',
+  'cultivar',
+  'clone',
+  'accessionId',
+  'collectionId',
+  'publicNfcUrl',
+  'qrCode',
+  'barcode',
+  'acquisitionDate',
+  'location',
+  'notes',
+  'customFields',
+])
+
+export function normalizeLabelFields(fields: unknown): LabelFieldId[] {
+  if (!Array.isArray(fields)) return []
+  return Array.from(
+    new Set(
+      fields.flatMap((field) => {
+        if (field === 'qr') return ['qrCode' as const]
+        if (field === 'nfcUrl') return ['publicNfcUrl' as const]
+        return typeof field === 'string' &&
+          labelFieldIds.has(field as LabelFieldId)
+          ? [field as LabelFieldId]
+          : []
+      }),
+    ),
+  )
+}
+
 export function validateLabelTemplate(template: EditableTemplate) {
   const errors: string[] = []
   if (!template.name.trim()) errors.push('Template name is required.')
@@ -188,8 +220,11 @@ export class TemplateService {
     ]
   }
 
-  listCustom() {
-    return labelTemplateRepository.getAll()
+  async listCustom() {
+    return (await labelTemplateRepository.getAll()).map((template) => ({
+      ...template,
+      fields: normalizeLabelFields(template.fields),
+    }))
   }
 
   async save(template: EditableTemplate) {
