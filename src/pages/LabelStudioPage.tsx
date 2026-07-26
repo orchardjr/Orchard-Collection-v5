@@ -9,6 +9,7 @@ import { Page } from '../components/ui/Page'
 import { LabelPreview } from '../features/labels/LabelPreview'
 import { PlantBatchSelector } from '../features/labels/PlantBatchSelector'
 import { TemplateEditor } from '../features/labels/TemplateEditor'
+import { describeLabelDataError } from '../features/labels/labelDataError'
 import { usePlants, useSpaces } from '../hooks/useOrchardData'
 import { nfcTagRepository } from '../db/repositories'
 import type { LabelTemplateDefinition } from '../models'
@@ -17,23 +18,38 @@ import {
   type LabelRenderInput,
   type RenderedLabel,
 } from '../services/LabelService'
-import { templateService } from '../services/TemplateService'
+import {
+  builtInLabelTemplates,
+  templateService,
+} from '../services/TemplateService'
 
 export function LabelStudioPage() {
   const { data: plants = [], isLoading: plantsLoading } = usePlants()
   const { data: spaces = [] } = useSpaces()
-  const { data: tags = [], isError: tagsError } = useQuery({
+  const {
+    data: tags = [],
+    error: tagsLoadError,
+    isError: tagsError,
+  } = useQuery({
     queryKey: ['nfc-tags', 'assigned'],
     queryFn: () => nfcTagRepository.listAssigned(),
   })
   const {
-    data: templates = [],
+    data: customTemplates = [],
+    error: templatesLoadError,
     isLoading: templatesLoading,
     isError: templatesError,
   } = useQuery({
     queryKey: ['label-templates'],
-    queryFn: () => templateService.list(),
+    queryFn: () => templateService.listCustom(),
   })
+  const templates = useMemo<LabelTemplateDefinition[]>(
+    () => [
+      ...builtInLabelTemplates,
+      ...customTemplates.map((template) => ({ ...template, builtIn: false })),
+    ],
+    [customTemplates],
+  )
   const queryClient = useQueryClient()
   const [templateId, setTemplateId] = useState(templateService.getDefaultId())
   const [draft, setDraft] = useState<LabelTemplateDefinition>()
@@ -225,13 +241,28 @@ export function LabelStudioPage() {
               </select>
             </label>
             {templatesError || tagsError ? (
-              <div
-                role="alert"
-                className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
-              >
-                Label data could not be loaded. Check your connection and retry.
+              <div className="space-y-2">
+                {templatesError && (
+                  <p
+                    role="alert"
+                    className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+                  >
+                    {describeLabelDataError(templatesLoadError, 'templates')}{' '}
+                    Built-in templates remain available.
+                  </p>
+                )}
+                {tagsError && (
+                  <p
+                    role="alert"
+                    className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+                  >
+                    {describeLabelDataError(tagsLoadError, 'nfc-tags')} Labels
+                    can still be created without NFC URLs.
+                  </p>
+                )}
               </div>
-            ) : activeTemplate ? (
+            ) : null}
+            {activeTemplate ? (
               <TemplateEditor
                 template={activeTemplate}
                 isDefault={defaultId === activeTemplate.id}
