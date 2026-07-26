@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { ensureSeedData } from '../db/seed'
+import { plantRepository as localPlantRepository } from '../db/repositories/PlantRepository'
+import { spaceRepository as localSpaceRepository } from '../db/repositories/SpaceRepository'
+import { taskRepository as localTaskRepository } from '../db/repositories/TaskRepository'
+import { timelineRepository as localTimelineRepository } from '../db/repositories/TimelineRepository'
+import { mediaRepository as localMediaRepository } from '../db/repositories/MediaRepository'
+import { localNfcTagRepository } from '../db/repositories/NfcTagRepository'
 import {
   mediaRepository,
   plantRepository,
@@ -18,17 +24,49 @@ import { taskService } from '../services/TaskService'
 import { timelineService } from '../services/TimelineService'
 import { nfcTagService } from '../services/NfcTagService'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { readWithLocalFallback } from '../data/readWithLocalFallback'
 
 async function prepareData() {
   if (!isSupabaseConfigured) await ensureSeedData()
 }
+
+const readPlants = () =>
+  readWithLocalFallback(
+    () => plantRepository.getAll(),
+    () => localPlantRepository.getAll(),
+    isSupabaseConfigured,
+  )
+const readSpaces = () =>
+  readWithLocalFallback(
+    () => spaceRepository.getAll(),
+    () => localSpaceRepository.getAll(),
+    isSupabaseConfigured,
+  )
+const readTasks = () =>
+  readWithLocalFallback(
+    () => taskRepository.getAll(),
+    () => localTaskRepository.getAll(),
+    isSupabaseConfigured,
+  )
+const readTimeline = () =>
+  readWithLocalFallback(
+    () => timelineRepository.getAll(),
+    () => localTimelineRepository.getAll(),
+    isSupabaseConfigured,
+  )
+const readMedia = () =>
+  readWithLocalFallback(
+    () => mediaRepository.getAll(),
+    () => localMediaRepository.getAll(),
+    isSupabaseConfigured,
+  )
 
 export function useSpaces() {
   return useQuery({
     queryKey: ['spaces'],
     queryFn: async () => {
       await prepareData()
-      return spaceRepository.getAll()
+      return readSpaces()
     },
     throwOnError: true,
   })
@@ -38,7 +76,7 @@ export function useTasks() {
     queryKey: ['tasks'],
     queryFn: async () => {
       await prepareData()
-      return taskRepository.getAll()
+      return readTasks()
     },
     throwOnError: true,
   })
@@ -48,7 +86,11 @@ export function useTimeline() {
     queryKey: ['timeline'],
     queryFn: async () => {
       await prepareData()
-      return timelineRepository.getAllNewest()
+      const timeline = await readTimeline()
+      return timeline.sort(
+        (first, second) =>
+          second.occurredAt.getTime() - first.occurredAt.getTime(),
+      )
     },
     throwOnError: true,
   })
@@ -147,7 +189,7 @@ export function usePlants() {
     queryKey: ['plants'],
     queryFn: async () => {
       await prepareData()
-      return plantRepository.getAll()
+      return readPlants()
     },
     throwOnError: true,
   })
@@ -158,7 +200,13 @@ export function usePlant(id: string | undefined) {
     queryKey: ['plants', id],
     queryFn: async () => {
       await prepareData()
-      return id ? plantRepository.getById(id) : undefined
+      return id
+        ? readWithLocalFallback(
+            () => plantRepository.getById(id),
+            () => localPlantRepository.getById(id),
+            isSupabaseConfigured,
+          )
+        : undefined
     },
     enabled: Boolean(id),
     throwOnError: true,
@@ -170,7 +218,11 @@ export function usePlantNfcTag(plantId: string | undefined) {
     queryKey: ['nfc-tags', 'plant', plantId],
     queryFn: () =>
       plantId
-        ? nfcTagRepository.findAssigned('plant', plantId)
+        ? readWithLocalFallback(
+            () => nfcTagRepository.findAssigned('plant', plantId),
+            () => localNfcTagRepository.findAssigned('plant', plantId),
+            isSupabaseConfigured,
+          )
         : Promise.resolve(undefined),
     enabled: Boolean(plantId),
     throwOnError: true,
@@ -213,7 +265,13 @@ export function usePlantTimeline(plantId: string | undefined) {
     queryKey: ['timeline', plantId],
     queryFn: async () => {
       await prepareData()
-      return plantId ? timelineRepository.getByPlantId(plantId) : []
+      return plantId
+        ? readWithLocalFallback(
+            () => timelineRepository.getByPlantId(plantId),
+            () => localTimelineRepository.getByPlantId(plantId),
+            isSupabaseConfigured,
+          )
+        : []
     },
     enabled: Boolean(plantId),
     throwOnError: true,
@@ -225,7 +283,13 @@ export function usePlantMedia(plantId: string | undefined) {
     queryKey: ['media', plantId],
     queryFn: async () => {
       await prepareData()
-      return plantId ? mediaRepository.getByPlantId(plantId) : []
+      return plantId
+        ? readWithLocalFallback(
+            () => mediaRepository.getByPlantId(plantId),
+            () => localMediaRepository.getByPlantId(plantId),
+            isSupabaseConfigured,
+          )
+        : []
     },
     enabled: Boolean(plantId),
     throwOnError: true,
@@ -237,7 +301,7 @@ export function useAllMedia() {
     queryKey: ['media'],
     queryFn: async () => {
       await prepareData()
-      return mediaRepository.getAll()
+      return readMedia()
     },
     throwOnError: true,
   })
@@ -339,11 +403,11 @@ export function useDashboardData() {
     queryFn: async () => {
       await prepareData()
       const [plants, tasks, timeline, spaces, media] = await Promise.all([
-        plantRepository.getAll(),
-        taskRepository.getAll(),
-        timelineRepository.getAll(),
-        spaceRepository.getAll(),
-        mediaRepository.getAll(),
+        readPlants(),
+        readTasks(),
+        readTimeline(),
+        readSpaces(),
+        readMedia(),
       ])
 
       return {
