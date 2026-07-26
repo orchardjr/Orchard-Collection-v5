@@ -31,6 +31,7 @@ describe('TemplateService', () => {
       builtIn: false,
     })
 
+    expect(await service.listCustom()).toHaveLength(2)
     expect(await service.list()).toHaveLength(builtInLabelTemplates.length + 2)
     expect(copy.name).toBe('My greenhouse label copy')
     await service.rename(custom.id, 'Renamed')

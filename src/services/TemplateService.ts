@@ -181,11 +181,15 @@ export function validateLabelTemplate(template: EditableTemplate) {
 
 export class TemplateService {
   async list(): Promise<LabelTemplateDefinition[]> {
-    const custom = await labelTemplateRepository.getAll()
+    const custom = await this.listCustom()
     return [
       ...builtInLabelTemplates,
       ...custom.map((template) => ({ ...template, builtIn: false })),
     ]
+  }
+
+  listCustom() {
+    return labelTemplateRepository.getAll()
   }
 
   async save(template: EditableTemplate) {

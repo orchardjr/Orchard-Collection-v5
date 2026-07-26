@@ -1,4 +1,4 @@
-create table public.label_templates (
+create table if not exists public.label_templates (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
@@ -16,27 +16,50 @@ create table public.label_templates (
   unique (user_id, name)
 );
 
-create index label_templates_user_updated
+create index if not exists label_templates_user_updated
   on public.label_templates(user_id, updated_at desc);
 
+drop trigger if exists set_updated_at on public.label_templates;
 create trigger set_updated_at
   before update on public.label_templates
   for each row execute procedure public.set_updated_at();
 
 alter table public.label_templates enable row level security;
 
+drop policy if exists label_templates_select_own on public.label_templates;
 create policy label_templates_select_own
   on public.label_templates for select to authenticated
   using ((select auth.uid()) = user_id);
+drop policy if exists label_templates_insert_own on public.label_templates;
 create policy label_templates_insert_own
   on public.label_templates for insert to authenticated
   with check ((select auth.uid()) = user_id);
+drop policy if exists label_templates_update_own on public.label_templates;
 create policy label_templates_update_own
   on public.label_templates for update to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
+drop policy if exists label_templates_delete_own on public.label_templates;
 create policy label_templates_delete_own
   on public.label_templates for delete to authenticated
   using ((select auth.uid()) = user_id);
 
-alter publication supabase_realtime add table public.label_templates;
+revoke all on table public.label_templates from anon;
+grant select, insert, update, delete on table public.label_templates
+  to authenticated;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'label_templates'
+  ) then
+    alter publication supabase_realtime add table public.label_templates;
+  end if;
+end
+$$;
+
+notify pgrst, 'reload schema';
