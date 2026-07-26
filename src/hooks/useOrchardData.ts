@@ -24,6 +24,7 @@ import { taskService } from '../services/TaskService'
 import { timelineService } from '../services/TimelineService'
 import { nfcTagService } from '../services/NfcTagService'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { isUuid } from '../lib/isUuid'
 import { readWithLocalFallback } from '../data/readWithLocalFallback'
 
 async function prepareData() {
@@ -236,17 +237,19 @@ export function usePlantNfcTag(plantId: string | undefined) {
     queryKey: ['nfc-tags', 'plant', plantId],
     queryFn: () =>
       plantId
-        ? readWithLocalFallback(
-            () => nfcTagRepository.findAssigned('plant', plantId),
-            () => localNfcTagRepository.findAssigned('plant', plantId),
-            isSupabaseConfigured,
-            {
-              repository: 'nfc_tags',
-              operation: 'findAssigned',
-              query:
-                'select * where resource_type = plant and resource_id = :id',
-            },
-          )
+        ? !isUuid(plantId)
+          ? localNfcTagRepository.findAssigned('plant', plantId)
+          : readWithLocalFallback(
+              () => nfcTagRepository.findAssigned('plant', plantId),
+              () => localNfcTagRepository.findAssigned('plant', plantId),
+              isSupabaseConfigured,
+              {
+                repository: 'nfc_tags',
+                operation: 'findAssigned',
+                query:
+                  'select * where resource_type = plant and resource_id = :id',
+              },
+            )
         : Promise.resolve(undefined),
     enabled: Boolean(plantId),
     // NFC is an optional enhancement. A missing or not-yet-deployed NFC
