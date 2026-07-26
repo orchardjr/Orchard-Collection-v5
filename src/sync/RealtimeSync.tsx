@@ -20,6 +20,7 @@ const syncedTables = [
   'feeding_logs',
   'feeder_settings',
   'nfc_tags',
+  'label_templates',
 ] as const
 
 export function RealtimeSync({ children }: PropsWithChildren) {
