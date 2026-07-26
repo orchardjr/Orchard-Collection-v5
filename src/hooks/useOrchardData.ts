@@ -249,7 +249,9 @@ export function usePlantNfcTag(plantId: string | undefined) {
           )
         : Promise.resolve(undefined),
     enabled: Boolean(plantId),
-    throwOnError: true,
+    // NFC is an optional enhancement. A missing or not-yet-deployed NFC
+    // schema must not prevent the core plant record from opening.
+    throwOnError: false,
   })
 }
 

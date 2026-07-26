@@ -43,7 +43,11 @@ export function PlantDetailsPage() {
   const { data: spaces = [] } = useSpaces()
   const { data: tasks = [] } = useTasks()
   const { data: plants = [] } = usePlants()
-  const { data: nfcTag, isLoading: nfcLoading } = usePlantNfcTag(plantId)
+  const {
+    data: nfcTag,
+    error: nfcLoadError,
+    isLoading: nfcLoading,
+  } = usePlantNfcTag(plantId)
   const { assignTag, replaceTag, unassignTag } = useNfcTagMutations()
   const [activeTab, setActiveTab] = useState<PlantDetailsTabId>('overview')
 
@@ -86,6 +90,7 @@ export function PlantDetailsPage() {
           plantName={plant.nickname}
           tag={nfcTag}
           loading={nfcLoading}
+          loadError={nfcLoadError?.message}
           pending={
             assignTag.isPending || replaceTag.isPending || unassignTag.isPending
           }
