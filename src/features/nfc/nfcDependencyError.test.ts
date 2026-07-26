@@ -45,4 +45,15 @@ describe('describeNfcDependencyError', () => {
       }),
     ).toContain('missing the scan_count column')
   })
+
+  it('preserves an actionable IndexedDB error', () => {
+    const error = new Error(
+      'Failed to execute transaction: object store nfcTags was not found',
+    )
+    error.name = 'NotFoundError'
+
+    expect(describeNfcDependencyError(error)).toBe(
+      'NFC tags could not be loaded (NotFoundError): Failed to execute transaction: object store nfcTags was not found',
+    )
+  })
 })
