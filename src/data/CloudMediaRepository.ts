@@ -4,6 +4,7 @@ import { requireSupabase } from '../lib/supabase'
 import {
   fromSupabaseRow,
   assertOnline,
+  repositoryError,
   SupabaseRepository,
   toSupabaseRow,
 } from './SupabaseRepository'
@@ -33,7 +34,8 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
     const { data, error } = await requireSupabase()
       .storage.from(bucket)
       .createSignedUrls(paths, 3600)
-    if (error) throw new Error('Photo access failed. Please retry.')
+    if (error)
+      throw new Error('Photo access failed. Please retry.', { cause: error })
     const urls = new Map(data.map((item) => [item.path, item.signedUrl]))
     return {
       ...asset,
@@ -51,7 +53,7 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
       .from(this.table)
       .select('*')
       .order('uploaded_at', { ascending: false })
-    if (error) throw new Error('Photos could not be loaded. Please retry.')
+    if (error) throw repositoryError('read', error)
     return Promise.all((data ?? []).map((row) => this.withUrls(row)))
   }
 
@@ -61,7 +63,7 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
       .select('*')
       .eq('id', id)
       .maybeSingle()
-    if (error) throw new Error('Photo could not be loaded. Please retry.')
+    if (error) throw repositoryError('read', error)
     return data ? this.withUrls(data) : undefined
   }
 
