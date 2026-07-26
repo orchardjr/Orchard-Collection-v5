@@ -29,7 +29,9 @@ const input: LabelRenderInput = {
     updatedAt: new Date(),
   },
   template: builtInLabelTemplates[2]!,
-  nfcToken: '710a0926-0123-4567-89ab-14ae3cbdf123',
+  assignedNfcTag: {
+    publicToken: '710a0926-0123-4567-89ab-14ae3cbdf123',
+  },
   location: 'Plant room',
 }
 
@@ -48,6 +50,18 @@ describe('LabelService', () => {
     expect(label.svg).toContain('Plant room')
     expect(label.svg).toContain('viewBox=')
     expect(label.svg).toContain('Code 128 barcode')
+    expect(label.svg).toContain(
+      'data-qr-url="https://app.orchardcollection.ca/nfc/',
+    )
+  })
+
+  it('renders a plant URL QR code when NFC is not assigned', async () => {
+    const label = await service.render({ ...input, assignedNfcTag: undefined })
+
+    expect(label.svg).toContain(
+      'data-qr-url="https://app.orchardcollection.ca/collection/plant-1"',
+    )
+    expect(label.svg).not.toContain('NFC not assigned')
   })
 
   it('renders a batch in input order', async () => {
@@ -121,6 +135,7 @@ describe('LabelService', () => {
     const markup = String(write.mock.calls[0]?.[0])
     expect(markup).toContain('@page{size:4in 2in;margin:0}')
     expect(markup.match(/class="label"/g)).toHaveLength(2)
+    expect(markup).toContain(labels[0]!.svg)
     expect(print).toHaveBeenCalledOnce()
   })
 

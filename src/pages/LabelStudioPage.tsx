@@ -69,17 +69,15 @@ export function LabelStudioPage() {
   const inputs = useMemo<LabelRenderInput[]>(() => {
     if (!activeTemplate) return []
     const spacesById = new Map(spaces.map((space) => [space.id, space.name]))
-    const tokensByPlant = new Map(
-      tags
-        .filter((tag) => tag.resourceId)
-        .map((tag) => [tag.resourceId!, tag.publicToken]),
+    const tagsByPlant = new Map(
+      tags.filter((tag) => tag.resourceId).map((tag) => [tag.resourceId!, tag]),
     )
     return plants
       .filter((plant) => selected.has(plant.id))
       .map((plant) => ({
         plant,
         template: activeTemplate,
-        nfcToken: tokensByPlant.get(plant.id),
+        assignedNfcTag: tagsByPlant.get(plant.id),
         location: plant.spaceId ? spacesById.get(plant.spaceId) : undefined,
       }))
   }, [activeTemplate, plants, selected, spaces, tags])

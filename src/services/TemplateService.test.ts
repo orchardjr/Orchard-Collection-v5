@@ -4,6 +4,7 @@ import { db } from '../db/database'
 import {
   TemplateService,
   builtInLabelTemplates,
+  normalizeLabelFields,
   validateLabelTemplate,
 } from './TemplateService'
 
@@ -75,5 +76,21 @@ describe('TemplateService', () => {
         'Custom labels are limited to 80 and values to 240 characters.',
       ]),
     )
+  })
+
+  it('preserves QR fields and safely normalizes legacy field names', async () => {
+    const saved = await service.save({
+      ...builtInLabelTemplates[0]!,
+      name: 'QR persistence',
+      fields: ['plantName', 'qrCode'],
+    })
+
+    expect((await service.listCustom())[0]?.fields).toContain('qrCode')
+    expect(saved.fields).toContain('qrCode')
+    expect(normalizeLabelFields(['plantName', 'qr', 'nfcUrl'])).toEqual([
+      'plantName',
+      'qrCode',
+      'publicNfcUrl',
+    ])
   })
 })

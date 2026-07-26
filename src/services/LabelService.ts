@@ -1,11 +1,17 @@
 import JsBarcode from 'jsbarcode'
-import type { LabelFieldId, LabelTemplateDefinition, Plant } from '../models'
+import type {
+  LabelFieldId,
+  LabelTemplateDefinition,
+  NfcTag,
+  Plant,
+} from '../models'
+import { resolvePlantQrUrl } from '../features/labels/resolvePlantQrUrl'
 import { qrService } from './QRService'
 
 export interface LabelRenderInput {
   plant: Plant
   template: LabelTemplateDefinition
-  nfcToken?: string
+  assignedNfcTag?: Pick<NfcTag, 'publicToken'>
   location?: string
   clone?: string
   accessionId?: string
@@ -44,7 +50,9 @@ function formatDate(value?: Date) {
 
 function textValue(field: LabelFieldId, input: LabelRenderInput) {
   const { plant } = input
-  const nfcUrl = input.nfcToken ? qrService.url(input.nfcToken) : undefined
+  const nfcUrl = input.assignedNfcTag
+    ? qrService.url(input.assignedNfcTag.publicToken)
+    : undefined
   const values: Partial<Record<LabelFieldId, string>> = {
     plantName: plant.nickname || plant.commonName || plant.scientificName,
     scientificName: plant.scientificName,
@@ -81,13 +89,19 @@ function truncate(value: string, length: number) {
     : value
 }
 
-function nestedSvg(svg: string, x: number, y: number, size: number) {
+function nestedSvg(
+  svg: string,
+  x: number,
+  y: number,
+  size: number,
+  qrUrl: string,
+) {
   return svg
     .replace(/<\?xml[^>]*>/, '')
     .replace(/<svg[^>]*>/, (root) =>
       root.replace(
         '<svg',
-        `<svg x="${x}" y="${y}" width="${size}" height="${size}"`,
+        `<svg x="${x}" y="${y}" width="${size}" height="${size}" data-qr-url="${escapeXml(qrUrl)}"`,
       ),
     )
 }
@@ -117,7 +131,10 @@ export class LabelService {
     const width = template.widthIn * PX_PER_IN
     const height = template.heightIn * PX_PER_IN
     const padding = Math.max(8, Math.min(width, height) * 0.07)
-    const hasQr = template.fields.includes('qrCode') && input.nfcToken
+    const qrUrl = template.fields.includes('qrCode')
+      ? resolvePlantQrUrl(plant, input.assignedNfcTag)
+      : undefined
+    const hasQr = Boolean(qrUrl)
     const qrSize = hasQr
       ? Math.min(template.qrSizeIn * PX_PER_IN, height - padding * 2)
       : 0
@@ -167,12 +184,14 @@ export class LabelService {
       }
     }
 
-    if (hasQr && input.nfcToken) {
-      const qr = await qrService.toSvg(input.nfcToken)
-      content.push(nestedSvg(qr, width - padding - qrSize, padding, qrSize))
+    if (hasQr && qrUrl) {
+      const qr = await qrService.toSvgUrl(qrUrl)
+      content.push(
+        nestedSvg(qr, width - padding - qrSize, padding, qrSize, qrUrl),
+      )
     } else if (template.fields.includes('qrCode')) {
       content.push(
-        `<text x="${width - padding}" y="${height / 2}" text-anchor="end" font-family="Arial, sans-serif" font-size="${fontSize}" fill="#555">NFC not assigned</text>`,
+        `<text x="${width - padding}" y="${height / 2}" text-anchor="end" font-family="Arial, sans-serif" font-size="${fontSize}" fill="#555">QR unavailable</text>`,
       )
     }
 
