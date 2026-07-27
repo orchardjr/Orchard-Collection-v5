@@ -24,9 +24,9 @@ export function ScanPage() {
   const [scanningNfc, setScanningNfc] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const streamRef = useRef<MediaStream | undefined>(undefined)
-  const timerRef = useRef<number | undefined>(undefined)
-  const nfcController = useRef<AbortController | undefined>(undefined)
+ const streamRef = useRef<MediaStream | undefined>(undefined)
+const timerRef = useRef<number | undefined>(undefined)
+const nfcController = useRef<AbortController | undefined>(undefined)
   const nfcCapability = getNfcCapability()
   const cameraSupported = Boolean(navigator.mediaDevices?.getUserMedia)
 
