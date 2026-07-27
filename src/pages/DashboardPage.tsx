@@ -6,6 +6,7 @@ import {
   ImagePlus,
   Library,
   Plus,
+  ScanLine,
   Sprout,
   Tags,
 } from 'lucide-react'
@@ -223,9 +224,9 @@ export function DashboardPage() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: 'Add item', icon: Plus, href: '/collection' },
+                { label: 'Scan label', icon: ScanLine, href: '/scan' },
                 { label: 'Import media', icon: ImagePlus, href: '/media' },
                 { label: 'Create task', icon: Tags, href: '/tasks' },
-                { label: 'Browse all', icon: Library, href: '/collection' },
               ].map(({ icon: Icon, label, href }) => (
                 <Link
                   key={label}
