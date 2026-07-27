@@ -26,9 +26,9 @@ export function ScanPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream>()
   const timerRef = useRef<number>()
-  const nfcController = useRef<AbortController>()
-  const nfcCapability = getNfcCapability()
-  const cameraSupported = Boolean(navigator.mediaDevices?.getUserMedia)
+  const streamRef = useRef<MediaStream | undefined>(undefined)
+const timerRef = useRef<number | undefined>(undefined)
+const nfcController = useRef<AbortController | undefined>(undefined)
 
   const stopQr = useCallback(() => {
     if (timerRef.current !== undefined) window.clearTimeout(timerRef.current)
