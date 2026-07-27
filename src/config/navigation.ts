@@ -7,6 +7,7 @@ import {
   Library,
   ListTodo,
   Settings,
+  ScanLine,
   Tags,
   Bug,
   type LucideIcon,
@@ -21,6 +22,7 @@ export interface NavigationItem {
 export const navigationItems: NavigationItem[] = [
   { label: 'Dashboard', path: '/', icon: LayoutDashboard },
   { label: 'Collection', path: '/collection', icon: Library },
+  { label: 'Scan', path: '/scan', icon: ScanLine },
   { label: 'Spaces', path: '/spaces', icon: Boxes },
   { label: 'Media', path: '/media', icon: Clapperboard },
   { label: 'Timeline', path: '/timeline', icon: Clock3 },

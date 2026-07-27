@@ -38,6 +38,7 @@ const NotFoundPage = page(
   'NotFoundPage',
 )
 const SettingsPage = page(() => import('../pages/SettingsPage'), 'SettingsPage')
+const ScanPage = page(() => import('../pages/ScanPage'), 'ScanPage')
 const SpacesPage = page(() => import('../pages/SpacesPage'), 'SpacesPage')
 const TasksPage = page(() => import('../pages/TasksPage'), 'TasksPage')
 const TimelinePage = page(() => import('../pages/TimelinePage'), 'TimelinePage')
@@ -138,6 +139,7 @@ export function App() {
                   </RepositoryErrorBoundary>
                 }
               />
+              <Route path="scan" element={<ScanPage />} />
               <Route
                 path="spaces"
                 element={
