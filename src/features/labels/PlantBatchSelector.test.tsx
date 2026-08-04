@@ -33,9 +33,13 @@ describe('PlantBatchSelector', () => {
 
     expect(screen.getByText('Active violet')).toBeTruthy()
     expect(screen.queryByText('Archived fern')).toBeNull()
-    expect(screen.getByRole('combobox', { name: 'Filter plants' })).toHaveValue(
-      'active',
-    )
+    expect(
+      (
+        screen.getByRole('combobox', {
+          name: 'Filter plants',
+        }) as HTMLSelectElement
+      ).value,
+    ).toBe('active')
   })
 
   it('can show archived and all plants', () => {
