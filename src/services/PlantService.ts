@@ -40,10 +40,14 @@ export class PlantService {
             ? 'Space changed'
             : input.status === 'archived'
               ? 'Plant archived'
-              : 'Plant updated',
+              : input.status === 'active' && previous?.status === 'archived'
+                ? 'Plant restored'
+                : 'Plant updated',
           description: moved
             ? `${getPlantDisplayName(plant)} moved to a different space.`
-            : `${getPlantDisplayName(plant)} was updated.`,
+            : input.status === 'active' && previous?.status === 'archived'
+              ? `${getPlantDisplayName(plant)} was restored to the active collection.`
+              : `${getPlantDisplayName(plant)} was updated.`,
           eventType: moved ? 'moved' : 'note',
           occurredAt: new Date(),
           spaceId: moved ? plant.spaceId : undefined,
@@ -58,6 +62,14 @@ export class PlantService {
 
   archive(id: string): Promise<Plant | undefined> {
     return this.update(id, { status: 'archived' })
+  }
+
+  restore(id: string): Promise<Plant | undefined> {
+    return this.update(id, { status: 'active' })
+  }
+
+  deletePermanently(id: string): Promise<void> {
+    return plantRepository.deletePermanently(id)
   }
 }
 

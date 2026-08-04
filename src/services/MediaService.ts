@@ -5,6 +5,7 @@ import {
 } from '../db/repositories'
 import { prepareMediaFile } from '../features/media/mediaProcessing'
 import type { MediaAsset } from '../models'
+import { formatSupabaseErrorDetails } from '../data/supabaseErrorDetails'
 
 export interface MediaImportResult {
   fileName: string
@@ -58,22 +59,38 @@ export class MediaService {
     )
     if (imported.length) {
       const hero = imported.find((asset) => asset.isHero)
-      if (hero)
-        await plantRepository.update(plantId, {
-          heroMediaId: hero.id,
-          heroImageUrl: undefined,
+      if (hero) {
+        try {
+          await plantRepository.update(plantId, {
+            heroMediaId: hero.id,
+            heroImageUrl: undefined,
+          })
+        } catch (error) {
+          throw new Error(
+            `Photo was uploaded and its plant_media row was created, but the plant hero-image update failed. Plant ID: ${plantId}. Media ID: ${hero.id}. ${formatSupabaseErrorDetails(error)}`,
+            { cause: error },
+          )
+        }
+      }
+      try {
+        await timelineRepository.create({
+          plantId,
+          title:
+            imported.length === 1 ? 'Photo added' : 'Multiple photos added',
+          description:
+            imported.length === 1
+              ? imported[0]?.fileName
+              : `${imported.length} photos added`,
+          eventType: 'media',
+          occurredAt: new Date(),
+          metadata: { count: imported.length, mediaId: imported[0]?.id ?? '' },
         })
-      await timelineRepository.create({
-        plantId,
-        title: imported.length === 1 ? 'Photo added' : 'Multiple photos added',
-        description:
-          imported.length === 1
-            ? imported[0]?.fileName
-            : `${imported.length} photos added`,
-        eventType: 'media',
-        occurredAt: new Date(),
-        metadata: { count: imported.length, mediaId: imported[0]?.id ?? '' },
-      })
+      } catch (error) {
+        throw new Error(
+          `Photo upload succeeded, but its timeline event failed. Plant ID: ${plantId}. ${formatSupabaseErrorDetails(error)}`,
+          { cause: error },
+        )
+      }
     }
     return results
   }

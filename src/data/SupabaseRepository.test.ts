@@ -57,15 +57,14 @@ describe('cloud repository diagnostics', () => {
     expect(error.message).toContain('invalid input syntax for type uuid')
   })
 
-  it('keeps production errors user-friendly', () => {
+  it('preserves exact Supabase diagnostics in production errors', () => {
     const cause = {
       code: '22P02',
       message: 'raw database error',
     }
     const error = repositoryError('write', cause, false)
-    expect(error.message).toBe(
-      'Cloud write failed. Check your connection and retry.',
-    )
+    expect(error.message).toContain('[22P02]')
+    expect(error.message).toContain('raw database error')
     expect(error.cause).toBe(cause)
   })
 })
