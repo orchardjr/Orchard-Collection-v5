@@ -104,11 +104,10 @@ interface SupabaseErrorDetails {
 export function repositoryError(
   action: string,
   error?: SupabaseErrorDetails | null,
-  development = import.meta.env.DEV,
+  _development = import.meta.env.DEV,
 ) {
   const friendly = `Cloud ${action} failed. Check your connection and retry.`
   if (!error) return new Error(friendly)
-  if (!development) return new Error(friendly, { cause: error })
   const diagnostic = [
     error.code ? `[${error.code}]` : undefined,
     error.message,

@@ -28,6 +28,7 @@ import { isUuid } from '../lib/isUuid'
 import { readWithLocalFallback } from '../data/readWithLocalFallback'
 import { safeCloudError } from '../data/collectionReadDiagnostics'
 import { normalizeNfcTagQueryResult } from '../features/nfc/nfcQueryResult'
+import { activePlants } from '../features/plants/plantFilters'
 
 async function prepareData() {
   if (!isSupabaseConfigured) await ensureSeedData()
@@ -426,6 +427,10 @@ export function usePlantMutations() {
       queryClient.invalidateQueries({ queryKey: ['plants'] }),
       queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
       queryClient.invalidateQueries({ queryKey: ['timeline'] }),
+      queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+      queryClient.invalidateQueries({ queryKey: ['media'] }),
+      queryClient.invalidateQueries({ queryKey: ['nfc-tags'] }),
+      queryClient.invalidateQueries({ queryKey: ['label-preview'] }),
     ])
   }
 
@@ -440,16 +445,33 @@ export function usePlantMutations() {
   })
   const archivePlant = useMutation({
     mutationFn: (id: string) => plantService.archive(id),
-    onSuccess: refresh,
+    onSettled: refresh,
+  })
+  const restorePlant = useMutation({
+    mutationFn: (id: string) => plantService.restore(id),
+    onSettled: refresh,
+  })
+  const deletePlant = useMutation({
+    mutationFn: (id: string) => plantService.deletePermanently(id),
+    onSettled: refresh,
   })
 
   const resetErrors = () => {
     createPlant.reset()
     updatePlant.reset()
     archivePlant.reset()
+    restorePlant.reset()
+    deletePlant.reset()
   }
 
-  return { archivePlant, createPlant, resetErrors, updatePlant }
+  return {
+    archivePlant,
+    createPlant,
+    deletePlant,
+    resetErrors,
+    restorePlant,
+    updatePlant,
+  }
 }
 
 export function useDashboardData() {
@@ -466,7 +488,7 @@ export function useDashboardData() {
       ])
 
       return {
-        plants,
+        plants: activePlants(plants),
         tasks: tasks.sort(
           (first, second) =>
             (first.dueAt?.getTime() ?? 0) - (second.dueAt?.getTime() ?? 0),

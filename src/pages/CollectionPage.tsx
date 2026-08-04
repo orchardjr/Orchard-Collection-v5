@@ -8,6 +8,10 @@ import { Skeleton } from '../components/ui/Skeleton'
 import type { CreateInput } from '../db/repositories'
 import { PlantCard } from '../features/plants/PlantCard'
 import { PlantFormDialog } from '../features/plants/PlantFormDialog'
+import {
+  filterCollectionPlants,
+  type PlantStatusFilter,
+} from '../features/plants/plantFilters'
 import { selectPlantCardMedia } from '../features/media/mediaSelectors'
 import {
   useAllMedia,
@@ -17,44 +21,29 @@ import {
 } from '../hooks/useOrchardData'
 import type { Plant } from '../models'
 
-type CollectionFilter = 'all' | 'favorites' | 'active' | 'archived'
 type CollectionSort = 'nickname' | 'scientificName' | 'createdAt'
 
 export function CollectionPage() {
   const { data: plants = [], isLoading } = usePlants()
   const { data: media = [], isLoading: mediaLoading } = useAllMedia()
   const { data: spaces = [] } = useSpaces()
-  const { archivePlant, createPlant, resetErrors, updatePlant } =
+  const { archivePlant, createPlant, resetErrors, restorePlant, updatePlant } =
     usePlantMutations()
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<CollectionFilter>('all')
+  const [filter, setFilter] = useState<PlantStatusFilter>('active')
   const [sort, setSort] = useState<CollectionSort>('nickname')
   const [dialogPlant, setDialogPlant] = useState<Plant | null | undefined>()
 
   const visiblePlants = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase()
-    return plants
-      .filter((plant) => {
-        const matchesSearch =
-          !query ||
-          [
-            plant.nickname,
-            plant.scientificName,
-            plant.commonName,
-            plant.cultivar,
-          ].some((value) => value?.toLocaleLowerCase().includes(query))
-        const matchesFilter =
-          filter === 'all' ||
-          (filter === 'favorites' ? plant.favorite : plant.status === filter)
-        return matchesSearch && matchesFilter
-      })
-      .sort((first, second) => {
+    return filterCollectionPlants(plants, filter, search).sort(
+      (first, second) => {
         if (sort === 'createdAt')
           return second.createdAt.getTime() - first.createdAt.getTime()
         return first[sort].localeCompare(second[sort], undefined, {
           sensitivity: 'base',
         })
-      })
+      },
+    )
   }, [filter, plants, search, sort])
 
   const openDialog = (plant: Plant | null) => {
@@ -86,8 +75,19 @@ export function CollectionPage() {
     }
   }
 
+  const restore = async (plant: Plant) => {
+    try {
+      await restorePlant.mutateAsync(plant.id)
+    } catch {
+      // The mutation error is rendered below the collection controls.
+    }
+  }
+
   const mutationError =
-    createPlant.error ?? updatePlant.error ?? archivePlant.error
+    createPlant.error ??
+    updatePlant.error ??
+    archivePlant.error ??
+    restorePlant.error
 
   return (
     <Page
@@ -120,14 +120,13 @@ export function CollectionPage() {
           <select
             value={filter}
             onChange={(event) =>
-              setFilter(event.target.value as CollectionFilter)
+              setFilter(event.target.value as PlantStatusFilter)
             }
             className="bg-transparent font-medium text-foreground outline-none"
           >
-            <option value="all">All plants</option>
-            <option value="favorites">Favorites</option>
-            <option value="active">Active</option>
+            <option value="active">Active plants</option>
             <option value="archived">Archived</option>
+            <option value="all">All plants</option>
           </select>
         </label>
         <label className="flex h-12 items-center gap-2 rounded-2xl border border-border/75 bg-background px-3.5 text-sm text-muted-foreground focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/10">
@@ -173,6 +172,7 @@ export function CollectionPage() {
               )}
               onArchive={archive}
               onEdit={openDialog}
+              onRestore={restore}
             />
           ))}
         </div>

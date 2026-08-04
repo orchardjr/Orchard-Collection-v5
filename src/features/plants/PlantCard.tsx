@@ -1,4 +1,4 @@
-import { Archive, Heart, Leaf, Pencil, PawPrint } from 'lucide-react'
+import { Archive, Heart, Leaf, Pencil, PawPrint, RotateCcw } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 
@@ -13,9 +13,16 @@ interface PlantCardProps {
   media?: MediaAsset
   onArchive: (plant: Plant) => void
   onEdit: (plant: Plant) => void
+  onRestore: (plant: Plant) => void
 }
 
-export function PlantCard({ media, onArchive, onEdit, plant }: PlantCardProps) {
+export function PlantCard({
+  media,
+  onArchive,
+  onEdit,
+  onRestore,
+  plant,
+}: PlantCardProps) {
   const Icon = plant.kind === 'animal' ? PawPrint : Leaf
 
   return (
@@ -98,6 +105,16 @@ export function PlantCard({ media, onArchive, onEdit, plant }: PlantCardProps) {
             >
               <Archive size={15} />
               Archive
+            </Button>
+          )}
+          {plant.status === 'archived' && (
+            <Button
+              variant="ghost"
+              className="ml-auto px-3"
+              onClick={() => onRestore(plant)}
+            >
+              <RotateCcw size={15} />
+              Restore plant
             </Button>
           )}
         </div>

@@ -8,6 +8,10 @@ import {
   SupabaseRepository,
   toSupabaseRow,
 } from './SupabaseRepository'
+import {
+  formatSupabaseErrorDetails,
+  getSupabaseErrorDetails,
+} from './supabaseErrorDetails'
 
 const bucket = 'plant-media'
 
@@ -89,6 +93,8 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
       ? `${base}/thumbnail.webp`
       : undefined
     const uploaded: string[] = []
+    let stage = 'Storage original upload'
+    let insertPayload: Record<string, unknown> | undefined
     try {
       const original = await client.storage
         .from(bucket)
@@ -99,6 +105,7 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
       if (original.error) throw original.error
       uploaded.push(originalPath)
       if (input.thumbnailBlob && thumbnailPath) {
+        stage = 'Storage thumbnail upload'
         const thumbnail = await client.storage
           .from(bucket)
           .upload(thumbnailPath, input.thumbnailBlob, {
@@ -108,23 +115,43 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
         if (thumbnail.error) throw thumbnail.error
         uploaded.push(thumbnailPath)
       }
-      const row = {
+      insertPayload = {
         ...toSupabaseRow(input),
         id,
         user_id: owner,
         storage_path: originalPath,
         thumbnail_path: thumbnailPath,
       }
+      stage = 'plant_media insert'
       const { data, error } = await client
         .from(this.table)
-        .insert(row)
+        .insert(insertPayload)
         .select('*')
         .single()
       if (error) throw error
+      stage = 'signed URL creation'
       return this.withUrls(data)
-    } catch {
-      if (uploaded.length) await client.storage.from(bucket).remove(uploaded)
-      throw new Error('Photo upload failed. Check your connection and retry.')
+    } catch (error) {
+      const diagnostic = {
+        stage,
+        plantId: input.plantId,
+        storagePath: originalPath,
+        thumbnailPath,
+        insertPayload,
+        error: getSupabaseErrorDetails(error),
+      }
+      console.error('[orchard.media-upload]', diagnostic)
+      let cleanup = ''
+      if (uploaded.length) {
+        const removal = await client.storage.from(bucket).remove(uploaded)
+        cleanup = removal.error
+          ? ` Storage cleanup also failed: ${formatSupabaseErrorDetails(removal.error)}`
+          : ' Uploaded Storage objects were removed.'
+      }
+      throw new Error(
+        `Photo upload failed during ${stage}. Plant ID: ${input.plantId}. Storage path: ${originalPath}. ${formatSupabaseErrorDetails(error)}${cleanup}`,
+        { cause: error },
+      )
     }
   }
 
@@ -140,7 +167,11 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
       target_plant_id: plantId,
       target_media_id: mediaId,
     })
-    if (error) throw new Error('Hero image could not be changed. Please retry.')
+    if (error)
+      throw new Error(
+        `Hero image update failed. Plant ID: ${plantId}. Media ID: ${mediaId}. ${formatSupabaseErrorDetails(error)}`,
+        { cause: error },
+      )
   }
 
   async toggleFavorite(id: string) {

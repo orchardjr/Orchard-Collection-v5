@@ -1,9 +1,35 @@
 import type { Plant, Space, Task, TimelineEvent } from '../models'
-import { SupabaseRepository } from './SupabaseRepository'
+import { requireSupabase } from '../lib/supabase'
+import { assertOnline, SupabaseRepository } from './SupabaseRepository'
+import { formatSupabaseErrorDetails } from './supabaseErrorDetails'
 
 export class CloudPlantRepository extends SupabaseRepository<Plant> {
   constructor() {
     super('plants')
+  }
+
+  async deletePermanently(id: string) {
+    assertOnline()
+    const client = requireSupabase()
+    const { data, error } = await client.rpc('delete_plant_permanently', {
+      target_plant_id: id,
+    })
+    if (error)
+      throw new Error(
+        `Permanent plant deletion failed. Plant ID: ${id}. ${formatSupabaseErrorDetails(error)}`,
+        { cause: error },
+      )
+
+    const paths = Array.isArray(data)
+      ? data.filter((path): path is string => typeof path === 'string')
+      : []
+    if (!paths.length) return
+    const removal = await client.storage.from('plant-media').remove(paths)
+    if (removal.error)
+      throw new Error(
+        `The plant and related database records were deleted, but Storage cleanup failed. ${formatSupabaseErrorDetails(removal.error)}`,
+        { cause: removal.error },
+      )
   }
 }
 
