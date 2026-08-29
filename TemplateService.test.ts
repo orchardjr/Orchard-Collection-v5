@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { db } from '../db/database'
+import { db } from './src/db/database'
 import {
   TemplateService,
   builtInLabelTemplates,
   validateLabelTemplate,
-} from './TemplateService'
+} from './src/services/TemplateService'
 
 describe('TemplateService', () => {
   const service = new TemplateService()

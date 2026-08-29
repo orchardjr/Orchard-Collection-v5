@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { db } from '../db/database'
-import { timelineRepository } from '../db/repositories'
-import { filterTimeline } from '../features/timeline/timelineFilters'
-import { TimelineService } from './TimelineService'
+import { db } from './src/db/database'
+import { timelineRepository } from './src/db/repositories'
+import { filterTimeline } from './src/features/timeline/timelineFilters'
+import { TimelineService } from './src/services/TimelineService'
 const service = new TimelineService()
 describe('TimelineService', () => {
   beforeEach(() => db.timeline.clear())

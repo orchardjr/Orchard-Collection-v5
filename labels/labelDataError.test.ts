@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { describeLabelDataError } from './labelDataError'
+import { describeLabelDataError } from '../src/features/labels/labelDataError'
 
 describe('describeLabelDataError', () => {
   it('identifies a missing Label Studio table', () => {

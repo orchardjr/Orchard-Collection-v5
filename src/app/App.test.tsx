@@ -7,6 +7,7 @@ import { App } from './App'
 import { AuthContext, type AuthContextValue } from '../auth/authContext'
 
 const localAuth: AuthContextValue = {
+  backendUnavailable: false,
   configured: false,
   loading: false,
   session: null,

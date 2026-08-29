@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LabelRenderInput, RenderedLabel } from './LabelService'
-import { LabelService } from './LabelService'
-import { builtInLabelTemplates } from './TemplateService'
+import type {
+  LabelRenderInput,
+  RenderedLabel,
+} from './src/services/LabelService'
+import { LabelService } from './src/services/LabelService'
+import { builtInLabelTemplates } from './src/services/TemplateService'
 
 const save = vi.fn()
 const addPage = vi.fn()

@@ -2,6 +2,7 @@ import type { Session, User } from '@supabase/supabase-js'
 import { createContext, useContext } from 'react'
 
 export interface AuthContextValue {
+  backendUnavailable: boolean
   configured: boolean
   loading: boolean
   session: Session | null

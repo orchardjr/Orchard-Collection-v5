@@ -106,6 +106,7 @@ export function repositoryError(
   error?: SupabaseErrorDetails | null,
   _development = import.meta.env.DEV,
 ) {
+  void _development
   const friendly = `Cloud ${action} failed. Check your connection and retry.`
   if (!error) return new Error(friendly)
   const diagnostic = [
