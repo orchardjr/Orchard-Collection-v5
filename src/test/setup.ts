@@ -24,3 +24,15 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: () => false,
   }),
 })
+
+Object.defineProperty(window, 'confirm', {
+  configurable: true,
+  writable: true,
+  value: () => true,
+})
+
+Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
+  configurable: true,
+  writable: true,
+  value: null,
+})

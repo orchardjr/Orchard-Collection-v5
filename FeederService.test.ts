@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { db } from '../db/database'
-import { FeederService } from './FeederService'
+import { db } from './src/db/database'
+import { FeederService } from './src/services/FeederService'
 
 const service = new FeederService()
 const colony = {

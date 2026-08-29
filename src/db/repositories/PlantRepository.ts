@@ -30,8 +30,7 @@ export class PlantRepository extends BaseRepository<Plant> {
             .filter((tag) => tag.resourceType === 'plant')
             .delete(),
           db.harvestLogs
-            .where('animalId')
-            .equals(id)
+            .filter((log) => log.animalId === id)
             .modify({ animalId: undefined }),
           db.feedingLogs
             .where('animalId')

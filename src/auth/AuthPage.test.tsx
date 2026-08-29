@@ -3,9 +3,15 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { AuthContext, type AuthContextValue } from './authContext'
 import { AuthPage } from './AuthPage'
+import {
+  BACKEND_UNAVAILABLE_HINT,
+  BACKEND_UNAVAILABLE_MESSAGE,
+  BackendUnavailableError,
+} from './authErrors'
 
 function renderAuth(overrides: Partial<AuthContextValue> = {}) {
   const value: AuthContextValue = {
+    backendUnavailable: false,
     configured: true,
     loading: false,
     session: null,
@@ -26,7 +32,7 @@ function renderAuth(overrides: Partial<AuthContextValue> = {}) {
 }
 
 describe('authentication screen', () => {
-  it('submits email and password login', async () => {
+  it('completes a normal successful login', async () => {
     const auth = renderAuth()
     fireEvent.change(screen.getByLabelText('Email'), {
       target: { value: 'grower@example.com' },
@@ -43,7 +49,7 @@ describe('authentication screen', () => {
     )
   })
 
-  it('shows safe authentication errors', async () => {
+  it('preserves the invalid-credentials message', async () => {
     renderAuth({
       signIn: vi
         .fn()
@@ -59,5 +65,20 @@ describe('authentication screen', () => {
     expect(
       await screen.findByText('Email or password is incorrect.'),
     ).toBeTruthy()
+  })
+
+  it('shows the safe backend-unavailable message and hint', async () => {
+    renderAuth({
+      signIn: vi.fn().mockRejectedValue(new BackendUnavailableError()),
+    })
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'grower@example.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'orchard-password' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(BACKEND_UNAVAILABLE_MESSAGE)).toBeTruthy()
+    expect(screen.getByText(BACKEND_UNAVAILABLE_HINT)).toBeTruthy()
   })
 })

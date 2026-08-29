@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { db } from '../db/database'
-import { taskRepository, timelineRepository } from '../db/repositories'
-import { TaskService, nextDueDate } from './TaskService'
+import { db } from './src/db/database'
+import { taskRepository, timelineRepository } from './src/db/repositories'
+import { TaskService, nextDueDate } from './src/services/TaskService'
 const service = new TaskService()
 const base = {
   title: 'Water fern',

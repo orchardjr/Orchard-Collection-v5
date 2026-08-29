@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { useAuth } from './authContext'
+import { BACKEND_UNAVAILABLE_HINT, isBackendUnavailable } from './authErrors'
 
 type Mode = 'login' | 'signup' | 'reset' | 'new-password'
 
@@ -15,11 +16,13 @@ export function AuthPage() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [backendUnavailable, setBackendUnavailable] = useState(false)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setBusy(true)
     setError('')
+    setBackendUnavailable(false)
     setMessage('')
     try {
       if (mode === 'login') await auth.signIn(email, password)
@@ -38,6 +41,7 @@ export function AuthPage() {
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Please try again.')
+      setBackendUnavailable(isBackendUnavailable(reason))
     } finally {
       setBusy(false)
     }
@@ -96,7 +100,16 @@ export function AuthPage() {
               />
             </label>
           )}
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && (
+            <div role="alert" className="text-sm text-red-600">
+              <p>{error}</p>
+              {backendUnavailable && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {BACKEND_UNAVAILABLE_HINT}
+                </p>
+              )}
+            </div>
+          )}
           {message && <p className="text-sm text-accent">{message}</p>}
           <Button className="w-full" type="submit" disabled={busy}>
             {busy

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { db } from '../db/database'
-import type { CreateInput } from '../db/repositories'
-import { timelineRepository } from '../db/repositories'
-import type { MediaAsset } from '../models'
-import { MediaService } from './MediaService'
+import { db } from './src/db/database'
+import type { CreateInput } from './src/db/repositories'
+import { timelineRepository } from './src/db/repositories'
+import type { MediaAsset } from './src/models'
+import { MediaService } from './src/services/MediaService'
 
 describe('MediaService', () => {
   const plantId = 'media-service-plant'
