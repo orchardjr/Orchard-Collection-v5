@@ -1,5 +1,6 @@
-import { Filter, Leaf, Plus, Search } from 'lucide-react'
+import { Filter, Leaf, Plus, Printer, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -24,6 +25,7 @@ import type { Plant } from '../models'
 type CollectionSort = 'nickname' | 'scientificName' | 'createdAt'
 
 export function CollectionPage() {
+  const navigate = useNavigate()
   const { data: plants = [], isLoading } = usePlants()
   const { data: media = [], isLoading: mediaLoading } = useAllMedia()
   const { data: spaces = [] } = useSpaces()
@@ -94,10 +96,19 @@ export function CollectionPage() {
       title="Collection"
       subtitle="Browse, organize, and enrich every item in your living archive."
       actions={
-        <Button onClick={() => openDialog(null)}>
-          <Plus size={17} />
-          Add plant
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => navigate('/collection/print')}
+          >
+            <Printer size={17} />
+            Print Collection
+          </Button>
+          <Button onClick={() => openDialog(null)}>
+            <Plus size={17} />
+            Add plant
+          </Button>
+        </div>
       }
     >
       <div className="mb-7 grid gap-3 rounded-[1.4rem] border border-border/75 bg-surface p-3 shadow-card md:grid-cols-[minmax(240px,1fr)_auto_auto]">
