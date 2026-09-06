@@ -25,13 +25,17 @@
 }
 
 @media print {
-  @page {
+  @page dymo-label {
     size: 4in 2.125in;
     margin: 0;
   }
 
-  html,
-  body {
+  @page collection-report {
+    size: auto;
+    margin: 0.42in;
+  }
+
+  body:has(.dymo-print-root) {
     width: 4in;
     /* The macOS DYMO driver rounds 2.125in stock to 2.12in. */
     height: 2.11in;
@@ -43,7 +47,7 @@
     background: #fff;
   }
 
-  body > #root,
+  body:has(.dymo-print-root) > #root,
   .dymo-print-root,
   .dymo-label {
     width: 4in;
@@ -66,6 +70,56 @@
   .dymo-print-controls,
   .dymo-print-status {
     display: none !important;
+  }
+
+  .dymo-label {
+    page: dymo-label;
+  }
+
+  body:has(.collection-print-root) {
+    min-width: 0;
+    background: #fff;
+  }
+
+  body:has(.collection-print-root) * {
+    visibility: hidden;
+  }
+
+  .collection-print-report,
+  .collection-print-report * {
+    visibility: visible !important;
+  }
+
+  .collection-print-controls {
+    display: none !important;
+  }
+
+  .collection-print-report {
+    page: collection-report;
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    color: #000;
+  }
+
+  .collection-report-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .collection-report-footer {
+    position: fixed;
+    right: 0;
+    bottom: -0.25in;
+    left: 0;
+  }
+
+  .collection-page-number::after {
+    content: 'Page ' counter(page);
   }
 }
 
