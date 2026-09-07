@@ -247,9 +247,9 @@ export function PlantLabelSheetsPage() {
           test-scan a printed label before printing a large batch.
         </p>
         <p className="text-xs text-muted-foreground">
-          Long text is shortened with “…”. More fields or QR leave less text
-          space. For the most readable labels, include fewer fields. No photos
-          are printed.
+          Full names automatically fit down to 6-point text, then use two lines
+          when needed. Nothing is truncated. If all selected text cannot fit,
+          choose fewer fields or turn off QR. No photos are printed.
         </p>
       </fieldset>
       <div className="flex flex-wrap items-center gap-3">

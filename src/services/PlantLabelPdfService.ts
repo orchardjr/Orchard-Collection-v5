@@ -64,19 +64,106 @@ export function loadPlantLabelFonts() {
     })
   return fontPromise
 }
-export function fitLabelText(pdf: jsPDF, text: string, width: number) {
+export const minimumLabelFontSize = 6
+const lineSpacing = 1.1
+export function fitLabelText(
+  pdf: jsPDF,
+  text: string,
+  width: number,
+  defaultSize: number,
+) {
   const clean = text.replace(/\s+/g, ' ').trim()
-  if (pdf.getTextWidth(clean) <= width) return clean
+  pdf.setFontSize(defaultSize)
+  const singleSize = Math.min(
+    defaultSize,
+    (defaultSize * width) / (pdf.getTextWidth(clean) || 1),
+  )
+  if (singleSize >= minimumLabelFontSize)
+    return { lines: [clean], size: singleSize }
+
+  // Prefer a balanced word boundary; split an unbroken identifier only when
+  // necessary. Both halves retain every character, never an ellipsis.
+  pdf.setFontSize(minimumLabelFontSize)
   const chars = Array.from(clean)
-  let low = 0,
-    high = chars.length
-  while (low < high) {
-    const mid = Math.ceil((low + high) / 2)
-    if (pdf.getTextWidth(chars.slice(0, mid).join('') + '...') <= width)
-      low = mid
-    else high = mid - 1
+  for (const wordsOnly of [true, false]) {
+    let best: { lines: string[]; measured: number } | undefined
+    for (let i = 1; i < chars.length; i++) {
+      if (wordsOnly && chars[i] !== ' ') continue
+      const lines = [
+        chars.slice(0, i).join('').trimEnd(),
+        chars.slice(i).join('').trimStart(),
+      ]
+      const measured = Math.max(...lines.map((line) => pdf.getTextWidth(line)))
+      if (measured <= width && (!best || measured < best.measured))
+        best = { lines, measured }
+    }
+    if (best)
+      return {
+        lines: best.lines,
+        size: Math.min(
+          defaultSize,
+          (minimumLabelFontSize * width) / best.measured,
+        ),
+      }
   }
-  return chars.slice(0, low).join('') + '...'
+  throw new Error(
+    'The full text cannot fit in two lines at a readable 6-point size. Turn off QR or choose fewer label fields. No text has been cut off.',
+  )
+}
+
+function layoutLabelText(
+  pdf: jsPDF,
+  lines: { text: string; bold: boolean }[],
+  width: number,
+): SheetText[] {
+  const fitted = lines.map((line) => {
+    const defaultSize = line.bold
+      ? lines.length >= 4
+        ? 9
+        : 11
+      : lines.length >= 4
+        ? 6
+        : 8
+    pdf.setFont('OrchardLabel', line.bold ? 'bold' : 'normal')
+    return {
+      ...fitLabelText(pdf, line.text, width, defaultSize),
+      bold: line.bold,
+    }
+  })
+  // Reserve vertical space for EVERY enabled field, not just the title.
+  // 1pt top/bottom padding also keeps glyphs clear of the inset cutting guide.
+  const availableHeight = letterLabelLayout.height - 2
+  const heightAt = (factor: number) =>
+    fitted.reduce(
+      (sum, item) =>
+        sum +
+        item.lines.length *
+          lineSpacing *
+          (minimumLabelFontSize + (item.size - minimumLabelFontSize) * factor),
+      0,
+    )
+  if (heightAt(0) > availableHeight)
+    throw new Error(
+      'The full text and selected fields cannot fit within this label at a readable 6-point size. Choose fewer fields or turn off QR. No text has been cut off.',
+    )
+  let low = 0,
+    high = 1
+  for (let i = 0; i < 40; i++) {
+    const mid = (low + high) / 2
+    if (heightAt(mid) <= availableHeight) low = mid
+    else high = mid
+  }
+  const factor = heightAt(1) <= availableHeight ? 1 : low
+  let y = (letterLabelLayout.height - heightAt(factor)) / 2
+  return fitted.flatMap((item) => {
+    const size =
+      minimumLabelFontSize + (item.size - minimumLabelFontSize) * factor
+    return item.lines.map((text) => {
+      const line = { text, x: 4, y: y + size * 0.85, size, bold: item.bold }
+      y += size * lineSpacing
+      return line
+    })
+  })
 }
 export async function createPlantLabelPdf(
   plants: Plant[],
@@ -130,33 +217,7 @@ export async function createPlantLabelPdf(
         throw new Error(
           'A selected plant has no content for these fields. Include Plant/display name or Plant ID.',
         )
-      const titleHeight = lines.length >= 4 ? 9 : 12
-      const bodyHeight = lines.length >= 4 ? 6 : 9
-      const heights = lines.map((line) =>
-        line.bold ? titleHeight : bodyHeight,
-      )
-      let y = (36 - heights.reduce((sum, height) => sum + height, 0)) / 2
-      const text = lines.map((line, i) => {
-        const size = line.bold
-          ? lines.length >= 4
-            ? 9
-            : 11
-          : lines.length >= 4
-            ? 6
-            : 8
-        pdf
-          .setFont('OrchardLabel', line.bold ? 'bold' : 'normal')
-          .setFontSize(size)
-        const item = {
-          text: fitLabelText(pdf, line.text, url ? 137 : 172),
-          x: 4,
-          y: y + heights[i]! * 0.8,
-          size,
-          bold: line.bold,
-        }
-        y += heights[i]!
-        return item
-      })
+      const text = layoutLabelText(pdf, lines, url ? 137 : 172)
       content = { plantId: plant.id, text }
       if (url) {
         const code = QRCode.create(url, { errorCorrectionLevel: 'M' })
