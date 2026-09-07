@@ -1,6 +1,7 @@
 import type { Plant } from '../../models'
 import { db } from '../database'
 import { BaseRepository } from './BaseRepository'
+import { assignedPlantIds } from '../../features/tasks/taskScheduling'
 
 export class PlantRepository extends BaseRepository<Plant> {
   constructor() {
@@ -23,7 +24,6 @@ export class PlantRepository extends BaseRepository<Plant> {
         await Promise.all([
           db.media.where('plantId').equals(id).delete(),
           db.timeline.where('plantId').equals(id).delete(),
-          db.tasks.where('plantId').equals(id).delete(),
           db.nfcTags
             .where('resourceId')
             .equals(id)
@@ -37,6 +37,19 @@ export class PlantRepository extends BaseRepository<Plant> {
             .equals(id)
             .modify({ animalId: undefined }),
         ])
+        for (const task of await db.tasks
+          .filter((task) => assignedPlantIds(task).includes(id))
+          .toArray()) {
+          const remaining = assignedPlantIds(task).filter(
+            (plantId) => plantId !== id,
+          )
+          if (remaining.length)
+            await db.tasks.update(task.id, {
+              plantIds: remaining,
+              plantId: remaining.length === 1 ? remaining[0] : undefined,
+            })
+          else await db.tasks.delete(task.id)
+        }
         await db.plants.delete(id)
       },
     )

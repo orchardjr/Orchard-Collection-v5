@@ -1,86 +1,80 @@
-import { Check, Plus, RotateCcw } from 'lucide-react'
+import { Check, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '../../../components/ui/Button'
 import { Card } from '../../../components/ui/Card'
-import type { CreateInput } from '../../../db/repositories'
 import { useTaskMutations } from '../../../hooks/useOrchardData'
-import type { Plant, Space, Task } from '../../../models'
-import { TaskFormDialog } from '../../tasks/TaskFormDialog'
-export function TasksTab({
-  plant,
-  tasks,
-  plants,
-  spaces,
-}: {
-  plant: Plant
-  tasks: Task[]
-  plants: Plant[]
-  spaces: Space[]
-}) {
+import type { Plant, Task } from '../../../models'
+import { PlantTaskDialog } from '../../tasks/PlantTaskDialog'
+import {
+  plantTaskGroups,
+  recurrenceLabel,
+  taskTypes,
+} from '../../tasks/taskScheduling'
+
+export function TasksTab({ plant, tasks }: { plant: Plant; tasks: Task[] }) {
   const [open, setOpen] = useState(false)
-  const m = useTaskMutations()
-  const error = Object.values(m).find((x) => x.error instanceof Error)?.error
-  const save = async (input: CreateInput<Task>) => {
-    await m.createTask.mutateAsync(input)
-    setOpen(false)
-  }
+  const { completeTask } = useTaskMutations()
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex justify-end">
         <Button onClick={() => setOpen(true)}>
           <Plus size={16} />
           Add task
         </Button>
       </div>
-      {tasks.length ? (
-        tasks.map((task) => (
-          <Card
-            key={task.id}
-            title={task.title}
-            description={task.dueAt?.toLocaleString() ?? 'No due date'}
-          >
-            <div className="flex gap-2">
-              <span className="capitalize text-sm text-muted-foreground">
-                {task.status} · {task.priority}
-              </span>
-              {task.status === 'open' ? (
-                <Button onClick={() => m.completeTask.mutate(task.id)}>
-                  <Check size={15} />
-                  Complete
-                </Button>
-              ) : (
-                <Button
-                  variant="secondary"
-                  onClick={() => m.reopenTask.mutate(task.id)}
+      {plantTaskGroups(tasks).map(([label, grouped]) => (
+        <section key={label}>
+          <h2 className="mb-3 font-display text-xl font-semibold">
+            {label}{' '}
+            <span className="text-sm text-muted-foreground">
+              ({grouped.length})
+            </span>
+          </h2>
+          <div className="space-y-3">
+            {grouped.length ? (
+              grouped.map((task) => (
+                <Card
+                  key={task.id}
+                  title={task.title}
+                  description={task.dueAt?.toLocaleString() ?? 'No due date'}
                 >
-                  <RotateCcw size={15} />
-                  Reopen
-                </Button>
-              )}
-            </div>
-          </Card>
-        ))
-      ) : (
-        <Card>
-          <p className="py-8 text-center text-sm text-muted-foreground">
-            No tasks linked to this plant.
-          </p>
-        </Card>
-      )}
-      {error instanceof Error && (
-        <p role="alert" className="text-sm text-red-600">
-          {error.message}
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm text-muted-foreground">
+                      {taskTypes[task.type]} · {recurrenceLabel(task)}
+                    </p>
+                    {task.status === 'open' && (
+                      <Button
+                        disabled={completeTask.isPending}
+                        onClick={() => completeTask.mutate(task.id)}
+                        aria-label={'Complete ' + task.title}
+                      >
+                        <Check size={16} />
+                        Complete
+                      </Button>
+                    )}
+                  </div>
+                  {task.status === 'completed' && (
+                    <p className="mt-2 text-xs">
+                      Completed {task.completedAt?.toLocaleString()}
+                    </p>
+                  )}
+                </Card>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No tasks in this section.
+              </p>
+            )}
+          </div>
+        </section>
+      ))}
+      {completeTask.error && (
+        <p role="alert" className="break-words text-sm text-red-600">
+          {completeTask.error.message}
         </p>
       )}
       {open && (
-        <TaskFormDialog
-          plants={plants}
-          spaces={spaces}
-          plantId={plant.id}
-          error={error instanceof Error ? error.message : undefined}
-          onClose={() => setOpen(false)}
-          onSave={save}
-        />
+        <PlantTaskDialog plantIds={[plant.id]} onClose={() => setOpen(false)} />
       )}
     </div>
   )

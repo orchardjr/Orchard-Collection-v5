@@ -18,6 +18,8 @@ export interface Plant extends BaseRecord {
   spaceId?: string
   waterIntervalDays?: number
   fertilizerIntervalDays?: number
+  lastWateredAt?: Date
+  lastFertilizedAt?: Date
   mounted?: boolean
   mossPole?: boolean
   careNotes?: string

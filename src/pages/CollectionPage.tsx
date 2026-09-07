@@ -1,6 +1,8 @@
 import { Filter, Leaf, Plus, Printer, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { PlantTaskDialog } from '../features/tasks/PlantTaskDialog'
+import { usePlantAssignmentTags } from '../features/tasks/usePlantAssignmentTags'
 
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -32,21 +34,34 @@ export function CollectionPage() {
   const { archivePlant, createPlant, resetErrors, restorePlant, updatePlant } =
     usePlantMutations()
   const [search, setSearch] = useState('')
+  const { data: plantTags = [] } = usePlantAssignmentTags()
+  const [spaceFilter, setSpaceFilter] = useState('')
+  const [tagFilter, setTagFilter] = useState('')
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [addingTask, setAddingTask] = useState(false)
   const [filter, setFilter] = useState<PlantStatusFilter>('active')
   const [sort, setSort] = useState<CollectionSort>('nickname')
   const [dialogPlant, setDialogPlant] = useState<Plant | null | undefined>()
 
   const visiblePlants = useMemo(() => {
-    return filterCollectionPlants(plants, filter, search).sort(
-      (first, second) => {
+    return filterCollectionPlants(plants, filter, search)
+      .filter(
+        (plant) =>
+          (!spaceFilter || plant.spaceId === spaceFilter) &&
+          (!tagFilter ||
+            plantTags.some(
+              (link) => link.plantId === plant.id && link.name === tagFilter,
+            )),
+      )
+      .sort((first, second) => {
         if (sort === 'createdAt')
           return second.createdAt.getTime() - first.createdAt.getTime()
         return first[sort].localeCompare(second[sort], undefined, {
           sensitivity: 'base',
         })
-      },
-    )
-  }, [filter, plants, search, sort])
+      })
+  }, [filter, plants, search, sort, spaceFilter, tagFilter, plantTags])
 
   const openDialog = (plant: Plant | null) => {
     resetErrors()
@@ -97,6 +112,15 @@ export function CollectionPage() {
       subtitle="Browse, organize, and enrich every item in your living archive."
       actions={
         <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setSelecting(!selecting)
+              setSelected(new Set())
+            }}
+          >
+            {selecting ? 'Cancel selection' : 'Select'}
+          </Button>
           <Button
             variant="secondary"
             onClick={() => navigate('/collection/print')}
@@ -154,6 +178,70 @@ export function CollectionPage() {
         </label>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-2">
+        <select
+          aria-label="Collection space"
+          className="min-h-11 min-w-0 rounded-xl border border-border bg-surface px-3"
+          value={spaceFilter}
+          onChange={(e) => setSpaceFilter(e.target.value)}
+        >
+          <option value="">All spaces</option>
+          {spaces
+            .filter((space) => !space.archivedAt)
+            .map((space) => (
+              <option key={space.id} value={space.id}>
+                {space.name}
+              </option>
+            ))}
+        </select>
+        {plantTags.length > 0 && (
+          <select
+            aria-label="Collection tag"
+            className="min-h-11 min-w-0 rounded-xl border border-border bg-surface px-3"
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+          >
+            <option value="">All tags</option>
+            {[...new Set(plantTags.map((link) => link.name))]
+              .sort()
+              .map((name) => (
+                <option key={name}>{name}</option>
+              ))}
+          </select>
+        )}
+      </div>
+      {selecting && (
+        <div className="sticky top-2 z-20 mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-3 shadow-card">
+          <span className="text-sm font-semibold">
+            {selected.size} selected
+          </span>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              setSelected(new Set(visiblePlants.map((plant) => plant.id)))
+            }
+          >
+            Select all filtered plants
+          </Button>
+          <Button variant="ghost" onClick={() => setSelected(new Set())}>
+            Clear
+          </Button>
+          <Button disabled={!selected.size} onClick={() => setAddingTask(true)}>
+            <Plus size={16} />
+            Add task
+          </Button>
+        </div>
+      )}
+      {addingTask && (
+        <PlantTaskDialog
+          plantIds={[...selected]}
+          onClose={() => setAddingTask(false)}
+          onSaved={() => {
+            setSelecting(false)
+            setSelected(new Set())
+          }}
+        />
+      )}
       {dialogPlant === undefined && mutationError instanceof Error && (
         <p
           className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
@@ -175,16 +263,36 @@ export function CollectionPage() {
       ) : visiblePlants.length ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {visiblePlants.map((plant) => (
-            <PlantCard
-              key={plant.id}
-              plant={plant}
-              media={selectPlantCardMedia(
-                media.filter((asset) => asset.plantId === plant.id),
+            <div key={plant.id} className="min-w-0">
+              {selecting && (
+                <label className="mb-2 flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border border-border bg-surface px-4 text-sm font-semibold">
+                  <input
+                    type="checkbox"
+                    className="size-5 accent-accent"
+                    checked={selected.has(plant.id)}
+                    onChange={() =>
+                      setSelected((current) => {
+                        const next = new Set(current)
+                        if (next.has(plant.id)) next.delete(plant.id)
+                        else next.add(plant.id)
+                        return next
+                      })
+                    }
+                  />
+                  Select {plant.nickname || plant.scientificName}
+                </label>
               )}
-              onArchive={archive}
-              onEdit={openDialog}
-              onRestore={restore}
-            />
+              <PlantCard
+                key={plant.id}
+                plant={plant}
+                media={selectPlantCardMedia(
+                  media.filter((asset) => asset.plantId === plant.id),
+                )}
+                onArchive={archive}
+                onEdit={openDialog}
+                onRestore={restore}
+              />
+            </div>
           ))}
         </div>
       ) : (

@@ -1,4 +1,6 @@
-import { Archive, ArrowLeft, RotateCcw, Trash2 } from 'lucide-react'
+import { Archive, ArrowLeft, RotateCcw, Trash2, Plus } from 'lucide-react'
+import { PlantTaskDialog } from '../features/tasks/PlantTaskDialog'
+import { assignedPlantIds } from '../features/tasks/taskScheduling'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -29,7 +31,6 @@ import {
   usePlantMedia,
   usePlantMutations,
   usePlantTimeline,
-  usePlants,
   useSpaces,
   useTasks,
 } from '../hooks/useOrchardData'
@@ -45,7 +46,7 @@ export function PlantDetailsPage() {
     usePlantMutations()
   const { data: spaces = [] } = useSpaces()
   const { data: tasks = [] } = useTasks()
-  const { data: plants = [] } = usePlants()
+  const [addingTask, setAddingTask] = useState(false)
   const {
     data: nfcTag,
     error: nfcLoadError,
@@ -178,9 +179,9 @@ export function PlantDetailsPage() {
     tasks: (
       <TasksTab
         plant={plant}
-        tasks={tasks.filter((task) => task.plantId === plant.id)}
-        plants={plants}
-        spaces={spaces}
+        tasks={tasks.filter((task) =>
+          assignedPlantIds(task).includes(plant.id),
+        )}
       />
     ),
     photos: mediaLoading ? (
@@ -188,7 +189,14 @@ export function PlantDetailsPage() {
     ) : (
       <PhotosTab plantId={plant.id} media={media} />
     ),
-    care: <CareTab plant={plant} />,
+    care: (
+      <CareTab
+        plant={plant}
+        tasks={tasks.filter((task) =>
+          assignedPlantIds(task).includes(plant.id),
+        )}
+      />
+    ),
     notes: (
       <NotesTab
         notes={plant.notes ?? ''}
@@ -206,6 +214,10 @@ export function PlantDetailsPage() {
       subtitle="The complete record for this collection item"
       actions={
         <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button variant="secondary" onClick={() => setAddingTask(true)}>
+            <Plus size={16} />
+            Add task
+          </Button>
           <Link
             to="/collection"
             className="inline-flex min-h-10 items-center gap-2 px-2 text-sm font-semibold text-accent"
@@ -244,6 +256,12 @@ export function PlantDetailsPage() {
         plant={plant}
         hero={media.find((asset) => asset.isHero) ?? media[0]}
       />
+      {addingTask && (
+        <PlantTaskDialog
+          plantIds={[plant.id]}
+          onClose={() => setAddingTask(false)}
+        />
+      )}
       {lifecycleError instanceof Error && (
         <p
           role="alert"

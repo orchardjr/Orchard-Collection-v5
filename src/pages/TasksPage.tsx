@@ -16,17 +16,26 @@ import { Page } from '../components/ui/Page'
 import { Skeleton } from '../components/ui/Skeleton'
 import type { CreateInput } from '../db/repositories'
 import { TaskFormDialog } from '../features/tasks/TaskFormDialog'
+import { usePlantAssignmentTags } from '../features/tasks/usePlantAssignmentTags'
+import {
+  assignedPlantIds,
+  recurrenceLabel,
+  taskTypes,
+} from '../features/tasks/taskScheduling'
 import {
   usePlants,
   useSpaces,
   useTaskMutations,
   useTasks,
+  useAllMedia,
 } from '../hooks/useOrchardData'
 import type { Task } from '../models'
 export function TasksPage() {
   const { data: tasks = [], isLoading } = useTasks()
   const { data: plants = [] } = usePlants()
   const { data: spaces = [] } = useSpaces()
+  const { data: media = [] } = useAllMedia()
+  const { data: plantTags = [] } = usePlantAssignmentTags()
   const m = useTaskMutations()
   const [editing, setEditing] = useState<Task | null>()
   const [search, setSearch] = useState('')
@@ -44,7 +53,7 @@ export function TasksPage() {
             (!status || t.status === status) &&
             (!type || t.type === type) &&
             (!priority || t.priority === priority) &&
-            (!plant || t.plantId === plant) &&
+            (!plant || assignedPlantIds(t).includes(plant)) &&
             (!space || t.spaceId === space) &&
             `${t.title} ${t.description ?? ''}`
               .toLowerCase()
@@ -98,21 +107,7 @@ export function TasksPage() {
             setStatus,
             ['open', 'completed', 'skipped', 'archived'],
           ],
-          [
-            'Type',
-            type,
-            setType,
-            [
-              'water',
-              'fertilize',
-              'repot',
-              'inspect',
-              'photograph',
-              'prune',
-              'treat',
-              'custom',
-            ],
-          ],
+          ['Type', type, setType, Object.keys(taskTypes)],
           [
             'Priority',
             priority,
@@ -203,14 +198,19 @@ export function TasksPage() {
                         key={task.id}
                         title={task.title}
                         description={
-                          plants.find((p) => p.id === task.plantId)?.nickname ??
-                          task.description
+                          plants
+                            .filter((p) =>
+                              assignedPlantIds(task).includes(p.id),
+                            )
+                            .map((p) => p.nickname || p.scientificName)
+                            .join(', ') || task.description
                         }
                       >
                         <div className="flex flex-wrap gap-2">
                           <Badge variant="accent">{task.type}</Badge>
                           <Badge>{task.status}</Badge>
                           <Badge>{task.priority}</Badge>
+                          <Badge>{recurrenceLabel(task)}</Badge>
                           {task.dueAt && (
                             <Badge>{task.dueAt.toLocaleString()}</Badge>
                           )}
@@ -218,6 +218,7 @@ export function TasksPage() {
                         <div className="mt-4 flex flex-wrap gap-2">
                           <Button
                             variant="ghost"
+                            disabled={task.careManaged}
                             onClick={() => setEditing(task)}
                           >
                             <Pencil size={15} />
@@ -226,6 +227,7 @@ export function TasksPage() {
                           {task.status === 'open' ? (
                             <>
                               <Button
+                                disabled={m.completeTask.isPending}
                                 onClick={() => m.completeTask.mutate(task.id)}
                               >
                                 <Check size={15} />
@@ -233,6 +235,7 @@ export function TasksPage() {
                               </Button>
                               <Button
                                 variant="ghost"
+                                disabled={task.careManaged}
                                 onClick={() => m.skipTask.mutate(task.id)}
                               >
                                 <SkipForward size={15} />
@@ -242,6 +245,11 @@ export function TasksPage() {
                           ) : (
                             <Button
                               variant="secondary"
+                              disabled={
+                                task.careManaged ||
+                                (!!task.recurrence &&
+                                  task.recurrence !== 'none')
+                              }
                               onClick={() => m.reopenTask.mutate(task.id)}
                             >
                               <RotateCcw size={15} />
@@ -250,6 +258,7 @@ export function TasksPage() {
                           )}
                           <Button
                             variant="ghost"
+                            disabled={task.careManaged}
                             onClick={() =>
                               window.confirm('Archive this task?') &&
                               m.archiveTask.mutate(task.id)
@@ -279,6 +288,8 @@ export function TasksPage() {
           task={editing ?? undefined}
           plants={plants}
           spaces={spaces}
+          media={media}
+          plantTags={plantTags}
           error={error instanceof Error ? error.message : undefined}
           onClose={() => setEditing(undefined)}
           onSave={save}
