@@ -98,6 +98,16 @@ export function CollectionPrintPage() {
             <p className="mt-2 text-muted-foreground">
               Choose what appears, review the report, then print or save as PDF.
             </p>
+            <Link
+              to="/collection/labels"
+              state={{
+                filteredIds: reportPlants.map((plant) => plant.id),
+                initialSource: 'filtered',
+              }}
+              className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-accent"
+            >
+              Plant Labels — Create 2.5″ × 0.5″ printable labels
+            </Link>
           </div>
           <Button
             onClick={() => window.print()}

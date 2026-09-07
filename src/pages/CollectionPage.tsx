@@ -132,6 +132,22 @@ export function CollectionPage() {
             <Plus size={17} />
             Add plant
           </Button>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              navigate('/collection/labels', {
+                state: {
+                  filteredIds: visiblePlants.map((plant) => plant.id),
+                  selectedIds: [...selected],
+                  initialSource:
+                    selecting && selected.size ? 'selected' : 'filtered',
+                },
+              })
+            }
+          >
+            <Printer size={17} />
+            Plant Labels
+          </Button>
         </div>
       }
     >
