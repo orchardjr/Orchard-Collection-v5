@@ -1,7 +1,69 @@
-import type { Plant, Space } from '../../models'
+import type { MediaAsset, NfcTag, Plant, Space } from '../../models'
 import type { PlantStatusFilter } from './plantFilters'
 
 export type CollectionPrintSort = 'name' | 'botanical' | 'createdAt' | 'space'
+export type CollectionAuditFilter =
+  'all' | 'noNfc' | 'noPhotos' | 'either' | 'both'
+export const collectionAuditFilters: {
+  id: CollectionAuditFilter
+  label: string
+}[] = [
+  { id: 'all', label: 'All plants' },
+  { id: 'noNfc', label: 'No NFC assigned' },
+  { id: 'noPhotos', label: 'No photos' },
+  { id: 'either', label: 'No NFC OR no photos' },
+  { id: 'both', label: 'No NFC AND no photos' },
+]
+export interface CollectionAuditStatus {
+  nfcAssigned: boolean
+  nfcCode?: string
+  photoCount: number
+}
+export function collectionAuditByPlant(tags: NfcTag[], media: MediaAsset[]) {
+  const result = new Map<string, CollectionAuditStatus>()
+  const get = (id: string) => {
+    if (!result.has(id)) result.set(id, { nfcAssigned: false, photoCount: 0 })
+    return result.get(id)!
+  }
+  for (const tag of tags) {
+    if (tag.resourceType === 'plant' && tag.resourceId) {
+      get(tag.resourceId).nfcAssigned = true
+      get(tag.resourceId).nfcCode = tag.uid || tag.publicToken
+    }
+  }
+  for (const asset of media) get(asset.plantId).photoCount++
+  return result
+}
+export function matchesCollectionAudit(
+  status: CollectionAuditStatus | undefined,
+  filter: CollectionAuditFilter,
+) {
+  const noNfc = !status?.nfcAssigned
+  const noPhotos = !status?.photoCount
+  return (
+    filter === 'all' ||
+    (filter === 'noNfc' && noNfc) ||
+    (filter === 'noPhotos' && noPhotos) ||
+    (filter === 'either' && (noNfc || noPhotos)) ||
+    (filter === 'both' && noNfc && noPhotos)
+  )
+}
+export function collectionAuditSummary(
+  plants: Plant[],
+  audit: ReadonlyMap<string, CollectionAuditStatus>,
+) {
+  return plants.reduce(
+    (sum, plant) => {
+      const status = audit.get(plant.id)
+      sum.total++
+      if (!status?.nfcAssigned) sum.withoutNfc++
+      if (!status?.photoCount) sum.withoutPhotos++
+      if (!status?.nfcAssigned && !status?.photoCount) sum.missingBoth++
+      return sum
+    },
+    { total: 0, withoutNfc: 0, withoutPhotos: 0, missingBoth: 0 },
+  )
+}
 
 export type CollectionPrintField =
   | 'displayName'
@@ -17,6 +79,8 @@ export type CollectionPrintField =
   | 'notes'
   | 'status'
   | 'tags'
+  | 'nfcStatus'
+  | 'photoStatus'
 
 export const collectionPrintFields: Array<{
   id: CollectionPrintField
@@ -35,10 +99,14 @@ export const collectionPrintFields: Array<{
   { id: 'notes', label: 'Notes' },
   { id: 'status', label: 'Status' },
   { id: 'tags', label: 'Tags' },
+  { id: 'nfcStatus', label: 'NFC Status' },
+  { id: 'photoStatus', label: 'Photo Status' },
 ]
 
 export const defaultCollectionPrintFields = new Set<CollectionPrintField>(
-  collectionPrintFields.map(({ id }) => id),
+  collectionPrintFields
+    .filter(({ id }) => id !== 'nfcStatus' && id !== 'photoStatus')
+    .map(({ id }) => id),
 )
 
 export const defaultCollectionPrintStatus: PlantStatusFilter = 'active'
@@ -66,10 +134,14 @@ export function prepareCollectionPrintPlants(
   spaces: Space[],
   status: PlantStatusFilter,
   sort: CollectionPrintSort,
+  auditFilter: CollectionAuditFilter = 'all',
+  audit: ReadonlyMap<string, CollectionAuditStatus> = new Map(),
 ) {
   const spaceNames = new Map(spaces.map((space) => [space.id, space.name]))
   const filtered = plants.filter(
-    (plant) => status === 'all' || plant.status === status,
+    (plant) =>
+      (status === 'all' || plant.status === status) &&
+      matchesCollectionAudit(audit.get(plant.id), auditFilter),
   )
 
   return [...filtered].sort((first, second) => {
@@ -102,6 +174,7 @@ export function collectionPrintValue(
   source: Plant,
   field: CollectionPrintField,
   spaces: Space[],
+  audit?: CollectionAuditStatus,
 ) {
   const plant = source as PrintablePlant
   const { genus, species } = botanicalParts(plant.scientificName)
@@ -125,6 +198,10 @@ export function collectionPrintValue(
     notes: plant.notes ?? plant.careNotes ?? '',
     status: plant.status === 'active' ? 'Active' : 'Archived',
     tags: plant.tags?.join(', ') ?? '',
+    nfcStatus: audit?.nfcAssigned ? 'Assigned' : 'Not assigned',
+    photoStatus: audit?.photoCount
+      ? `${audit.photoCount} ${audit.photoCount === 1 ? 'photo' : 'photos'}`
+      : 'No photos',
   }
   return values[field]
 }

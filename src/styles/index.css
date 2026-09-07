@@ -106,7 +106,8 @@
     color: #000;
   }
 
-  .collection-report-row {
+  .collection-report-row,
+  .collection-audit-summary {
     break-inside: avoid;
     page-break-inside: avoid;
   }
