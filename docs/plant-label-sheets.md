@@ -36,8 +36,13 @@ sorting; per-plant copy overrides are not provided.
 
 Fields are opt-in except name, botanical name, and cultivar. Botanical/cultivar
 share a line; selected ID, NFC, and space each get their own line when available.
-The name has stronger weight and size. Long lines are measured using the embedded
-font and truncated with three dots; dense labels can use 6-point secondary text.
+The name has stronger weight and size. Text is measured using the embedded font
+and shrinks only as needed, with a 6-point minimum. Names and secondary fields
+prefer one line and can wrap to two balanced lines without losing text. Vertical
+space is reserved for every enabled field. If full text cannot fit in two lines,
+or the complete set of fields exceeds the fixed height at the minimum size,
+generation stops with a clear message to reduce fields or remove QR; it never
+silently truncates, clips, or prints unreadably small text.
 The sheet preview uses the same fitted strings, font, coordinates, and QR modules
 as the PDF. Changing settings invalidates the prior downloadable PDF.
 

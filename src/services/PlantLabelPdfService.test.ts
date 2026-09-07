@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import jsQR from 'jsqr'
 import type { Plant } from '../models'
-import { createPlantLabelPdf } from './PlantLabelPdfService'
+import {
+  createPlantLabelPdf,
+  minimumLabelFontSize,
+} from './PlantLabelPdfService'
 import {
   labelFields,
   letterLabelLayout,
@@ -33,6 +36,133 @@ const options: PlantLabelOptions = {
   qr: false,
 }
 describe('Letter plant label PDF', () => {
+  it.each([false, true])(
+    'preserves complete real-world names and secondary text with QR=%s',
+    async (qr) => {
+      const names = [
+        'Alocasia Ninja Mint Variegated',
+        'Anthurium Pterodactyl Variegated',
+        "Begonia 'Rouge' Variegated Silver Form",
+        "Anthurium crystallinum × magnificum 'Dark Form Silver Veins'",
+      ]
+      const plants = names.map((name, i) => ({
+        ...plant(`55ad561b-99b2-41f3-ac0f-844e2ca23eb${i}`, name),
+        scientificName:
+          "Philodendron erubescens 'Pink Princess Marble Variegata'",
+        cultivar: undefined,
+      }))
+      const result = await createPlantLabelPdf(
+        plants,
+        [],
+        new Map(),
+        { ...options, qr },
+        fonts,
+      )
+      for (const [i, label] of result.sheets[0]!.entries()) {
+        expect(
+          label.text
+            .filter((line) => line.bold)
+            .map((line) => line.text)
+            .join(' '),
+        ).toBe(names[i])
+        expect(
+          label.text
+            .filter((line) => !line.bold)
+            .map((line) => line.text)
+            .join(' '),
+        ).toBe(plants[i]!.scientificName)
+        expect([label.width, label.height]).toEqual([180, 36])
+        for (const line of label.text) {
+          expect(line.text).not.toMatch(/\.\.\.|…/)
+          expect(line.size).toBeGreaterThanOrEqual(minimumLabelFontSize)
+          result.pdf
+            .setFont('OrchardLabel', line.bold ? 'bold' : 'normal')
+            .setFontSize(line.size)
+          expect(result.pdf.getTextWidth(line.text)).toBeLessThanOrEqual(
+            (qr ? 137 : 172) + 1e-8,
+          )
+          expect(line.y - line.size * 0.85).toBeGreaterThanOrEqual(1 - 1e-8)
+          expect(line.y + line.size * 0.25).toBeLessThanOrEqual(35 + 1e-8)
+        }
+        for (let j = 1; j < label.text.length; j++) {
+          const previous = label.text[j - 1]!,
+            current = label.text[j]!
+          expect(current.y - current.size * 0.85).toBeGreaterThanOrEqual(
+            previous.y + previous.size * 0.25 - 1e-8,
+          )
+        }
+      }
+      expect(
+        result.sheets[0]![3]!.text.filter((line) => line.bold),
+      ).toHaveLength(2)
+      expect(result.sheets[0]![0]!.text[0]!.size).toBeLessThan(11)
+      expect(result.pdf.getNumberOfPages()).toBe(1)
+    },
+  )
+  it('keeps short names at normal sizes and uses the extra width without QR', async () => {
+    const id = '55ad561b-99b2-41f3-ac0f-844e2ca23eb5'
+    const short = await createPlantLabelPdf(
+      [plant(id, 'Aloe')],
+      [],
+      new Map(),
+      options,
+      fonts,
+    )
+    expect(short.sheets[0]![0]!.text.map((line) => line.size)).toEqual([11, 8])
+    const p = plant(id, 'Alocasia Ninja Mint Variegated')
+    const plain = await createPlantLabelPdf([p], [], new Map(), options, fonts)
+    const qr = await createPlantLabelPdf(
+      [p],
+      [],
+      new Map(),
+      { ...options, qr: true },
+      fonts,
+    )
+    expect(plain.sheets[0]![0]!.text[0]!.size).toBeGreaterThan(
+      qr.sheets[0]![0]!.text[0]!.size,
+    )
+  })
+  it('wraps unbroken names without discarding characters', async () => {
+    const name =
+      'AnthuriumCrystallinumMagnificumDarkFormSilverVeinsSelectedSeedling'
+    const result = await createPlantLabelPdf(
+      [plant('a', name)],
+      [],
+      new Map(),
+      { ...options, fields: new Set(['name']) },
+      fonts,
+    )
+    const text = result.sheets[0]![0]!.text
+    expect(text).toHaveLength(2)
+    expect(text.map((line) => line.text).join('')).toBe(name)
+  })
+  it('refuses impossible text or overfull fields instead of truncating or shrinking below the readable minimum', async () => {
+    await expect(
+      createPlantLabelPdf(
+        [plant('a', 'Extremely long cultivar '.repeat(30))],
+        [],
+        new Map(),
+        options,
+        fonts,
+      ),
+    ).rejects.toThrow('two lines')
+    const p = {
+      ...plant(
+        'id',
+        "Anthurium crystallinum × magnificum 'Dark Form Silver Veins Selected Seedling'",
+      ),
+      spaceId: 's',
+    }
+    await expect(
+      createPlantLabelPdf(
+        [p],
+        [{ id: 's', name: 'Greenhouse' } as never],
+        new Map([[p.id, { nfcAssigned: true, nfcCode: '123', photoCount: 0 }]]),
+        { ...options, fields: new Set(labelFields.map((field) => field.id)) },
+        fonts,
+      ),
+    ).rejects.toThrow('selected fields cannot fit')
+  })
   it('places multiple 2.5 by 0.5 inch labels on the SAME Letter PDF page', async () => {
     const result = await createPlantLabelPdf(
       [plant('a'), plant('b'), plant('c')],
@@ -119,7 +249,7 @@ describe('Letter plant label PDF', () => {
   })
   it('renders optional NFC and location text, fits long names, and keeps text inside labels', async () => {
     const p = {
-      ...plant('short-id', 'Étoile ' + 'very long plant name '.repeat(30)),
+      ...plant('short-id', 'Étoile Alocasia Ninja Mint Variegated'),
       spaceId: 's',
     }
     const result = await createPlantLabelPdf(
@@ -132,7 +262,8 @@ describe('Letter plant label PDF', () => {
       fonts,
     )
     const text = result.sheets[0]![0]!.text
-    expect(text[0]!.text.endsWith('...')).toBe(true)
+    expect(text[0]!.text).toBe(p.nickname)
+    expect(text.some((line) => line.text.includes('...'))).toBe(false)
     expect(text.map((line) => line.text)).toContain('NFC: NFC-123')
     expect(text.map((line) => line.text)).toContain('Greenhouse')
     for (const line of text) {

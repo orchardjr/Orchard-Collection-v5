@@ -51,6 +51,47 @@ describe('Plant label sheet setup', () => {
       ],
     })
   })
+  it('renders fitted PDF lines with their exact font sizes and positions, without CSS truncation', async () => {
+    const document = await mocks.create()
+    const lines = [
+      {
+        text: 'Anthurium crystallinum × magnificum',
+        x: 4,
+        y: 10,
+        size: 6.5,
+        bold: true,
+      },
+      {
+        text: "'Dark Form Silver Veins'",
+        x: 4,
+        y: 17.15,
+        size: 6.5,
+        bold: true,
+      },
+      { text: 'Philodendron erubescens', x: 4, y: 25, size: 7, bold: false },
+    ]
+    document.sheets[0][0].text = lines
+    mocks.create.mockResolvedValue(document)
+    render(
+      <MemoryRouter>
+        <PlantLabelSheetsPage />
+      </MemoryRouter>,
+    )
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Preview label sheets' }),
+    )
+    const sheet = await screen.findByRole('img', {
+      name: 'Letter sheet 1 with 2 labels',
+    })
+    const elements = sheet.querySelectorAll('text')
+    expect(elements).toHaveLength(lines.length)
+    lines.forEach((line, i) => {
+      expect(elements[i]).toHaveTextContent(line.text)
+      expect(elements[i]).toHaveAttribute('font-size', String(line.size))
+      expect(elements[i]).toHaveAttribute('x', String(line.x))
+      expect(elements[i]).toHaveAttribute('y', String(line.y))
+    })
+  })
   it('previews a real tiled sheet before enabling PDF download, and invalidates changed settings', async () => {
     render(
       <MemoryRouter>
