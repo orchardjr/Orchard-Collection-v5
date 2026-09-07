@@ -1,6 +1,17 @@
 import type { Plant, Space, Task, TimelineEvent } from '../models'
 import { requireSupabase } from '../lib/supabase'
-import { assertOnline, SupabaseRepository } from './SupabaseRepository'
+import {
+  assertOnline,
+  fromSupabaseRow,
+  toSupabaseRow,
+  repositoryError,
+  SupabaseRepository,
+} from './SupabaseRepository'
+import type {
+  CreateInput,
+  UpdateInput,
+} from '../db/repositories/BaseRepository'
+import { assignedPlantIds } from '../features/tasks/taskScheduling'
 import { formatSupabaseErrorDetails } from './supabaseErrorDetails'
 
 export class CloudPlantRepository extends SupabaseRepository<Plant> {
@@ -62,11 +73,62 @@ export class CloudTaskRepository extends SupabaseRepository<Task> {
   constructor() {
     super('tasks')
   }
+  override async getAll(): Promise<Task[]> {
+    const { data, error } = await requireSupabase()
+      .from('tasks')
+      .select('*, task_plants(plant_id)')
+      .order('created_at')
+    if (error) throw repositoryError('task read', error)
+    return (data ?? []).map((row) => this.decode(row))
+  }
+  override async getById(id: string): Promise<Task | undefined> {
+    const { data, error } = await requireSupabase()
+      .from('tasks')
+      .select('*, task_plants(plant_id)')
+      .eq('id', id)
+      .maybeSingle()
+    if (error) throw repositoryError('task read', error)
+    return data ? this.decode(data) : undefined
+  }
+  private decode(row: Record<string, unknown>): Task {
+    const { task_plants, ...rest } = row
+    const ids = Array.isArray(task_plants)
+      ? task_plants.map((link) => String(link.plant_id))
+      : []
+    return fromSupabaseRow<Task>({
+      ...rest,
+      plant_ids: ids.length ? ids : row.plant_id ? [row.plant_id] : [],
+    })
+  }
+  private async save(
+    input: CreateInput<Task> | UpdateInput<Task>,
+    id?: string,
+  ) {
+    assertOnline()
+    const { data, error } = await requireSupabase().rpc(
+      'save_collection_task',
+      { task_input: toSupabaseRow(input), target_task_id: id ?? null },
+    )
+    if (error)
+      throw new Error(
+        `Could not save task. ${formatSupabaseErrorDetails(error)}`,
+        { cause: error },
+      )
+    return fromSupabaseRow<Task>(data)
+  }
+  override create(input: CreateInput<Task>) {
+    return this.save(input)
+  }
+  override update(id: string, input: UpdateInput<Task>) {
+    return this.save(input, id)
+  }
   async getOpen() {
     return (await this.getAll()).filter((task) => task.status === 'open')
   }
   async getByPlantId(id: string) {
-    return (await this.getAll()).filter((task) => task.plantId === id)
+    return (await this.getAll()).filter((task) =>
+      assignedPlantIds(task).includes(id),
+    )
   }
   async getBySpaceId(id: string) {
     return (await this.getAll()).filter((task) => task.spaceId === id)

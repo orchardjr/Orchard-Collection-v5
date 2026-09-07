@@ -1,6 +1,7 @@
 import type { Task } from '../../models'
 import { db } from '../database'
 import { BaseRepository } from './BaseRepository'
+import { assignedPlantIds } from '../../features/tasks/taskScheduling'
 
 export class TaskRepository extends BaseRepository<Task> {
   constructor() {
@@ -11,7 +12,9 @@ export class TaskRepository extends BaseRepository<Task> {
     return db.tasks.where('status').equals('open').toArray()
   }
   getByPlantId(id: string): Promise<Task[]> {
-    return db.tasks.where('plantId').equals(id).toArray()
+    return db.tasks
+      .filter((task) => assignedPlantIds(task).includes(id))
+      .toArray()
   }
   getBySpaceId(id: string): Promise<Task[]> {
     return db.tasks.where('spaceId').equals(id).toArray()

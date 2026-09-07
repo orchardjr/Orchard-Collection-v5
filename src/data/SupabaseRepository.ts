@@ -17,6 +17,8 @@ const dateKeys = new Set([
   'createdAt',
   'updatedAt',
   'purchaseDate',
+  'lastWateredAt',
+  'lastFertilizedAt',
   'archivedAt',
   'dueAt',
   'completedAt',

@@ -11,28 +11,30 @@ if (!Blob.prototype.arrayBuffer) {
   }
 }
 
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: (query: string) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-    addListener: () => undefined,
-    removeListener: () => undefined,
-    dispatchEvent: () => false,
-  }),
-})
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: (query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }),
+  })
 
-Object.defineProperty(window, 'confirm', {
-  configurable: true,
-  writable: true,
-  value: () => true,
-})
+  Object.defineProperty(window, 'confirm', {
+    configurable: true,
+    writable: true,
+    value: () => true,
+  })
 
-Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
-  configurable: true,
-  writable: true,
-  value: null,
-})
+  Object.defineProperty(HTMLMediaElement.prototype, 'srcObject', {
+    configurable: true,
+    writable: true,
+    value: null,
+  })
+}

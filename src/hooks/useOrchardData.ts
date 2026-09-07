@@ -29,6 +29,7 @@ import { readWithLocalFallback } from '../data/readWithLocalFallback'
 import { safeCloudError } from '../data/collectionReadDiagnostics'
 import { normalizeNfcTagQueryResult } from '../features/nfc/nfcQueryResult'
 import { activePlants } from '../features/plants/plantFilters'
+import type { CareProfileInput } from '../features/tasks/taskScheduling'
 
 async function prepareData() {
   if (!isSupabaseConfigured) await ensureSeedData()
@@ -146,7 +147,7 @@ export function useSpaceMutations() {
 }
 
 export function useTaskMutations() {
-  const refresh = useRefresh(['tasks', 'timeline', 'dashboard'])
+  const refresh = useRefresh(['tasks', 'plants', 'timeline', 'dashboard'])
   return {
     createTask: useMutation({
       mutationFn: (input: CreateInput<Task>) => taskService.create(input),
@@ -174,6 +175,15 @@ export function useTaskMutations() {
       onSuccess: refresh,
     }),
   }
+}
+
+export function useCareMutation() {
+  const refresh = useRefresh(['plants', 'tasks', 'dashboard'])
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: CareProfileInput }) =>
+      taskService.saveCare(id, input),
+    onSuccess: refresh,
+  })
 }
 
 export function useTimelineMutations() {

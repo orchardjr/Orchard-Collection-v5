@@ -10,11 +10,17 @@ export type TaskType =
   | 'photograph'
   | 'prune'
   | 'treat'
+  | 'propagate'
+  | 'rotate'
+  | 'moss-pole'
   | 'custom'
-export type TaskRecurrence = 'none' | 'daily' | 'weekly' | 'interval'
+export type TaskRecurrence =
+  'none' | 'daily' | 'weekly' | 'interval' | 'monthly'
 
 export interface Task extends BaseRecord {
   plantId?: string
+  plantIds?: string[]
+  careManaged?: boolean
   spaceId?: string
   title: string
   description?: string
