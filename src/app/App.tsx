@@ -24,6 +24,10 @@ const CollectionPrintPage = page(
   () => import('../pages/CollectionPrintPage'),
   'CollectionPrintPage',
 )
+const PlantLabelSheetsPage = page(
+  () => import('../pages/PlantLabelSheetsPage'),
+  'PlantLabelSheetsPage',
+)
 const DashboardPage = page(
   () => import('../pages/DashboardPage'),
   'DashboardPage',
@@ -138,6 +142,10 @@ export function App() {
               <Route
                 path="collection/print"
                 element={<CollectionPrintPage />}
+              />
+              <Route
+                path="collection/labels"
+                element={<PlantLabelSheetsPage />}
               />
               <Route
                 path="collection/:plantId"

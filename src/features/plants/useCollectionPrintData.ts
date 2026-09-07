@@ -93,6 +93,7 @@ export function useCollectionPrintData() {
     ),
   )
   return {
+    local,
     plants: plants.data ?? [],
     spaces: spaces.data ?? [],
     media: media.data ?? [],
