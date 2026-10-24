@@ -11,6 +11,7 @@ import { Skeleton } from '../components/ui/Skeleton'
 import type { CreateInput } from '../db/repositories'
 import { PlantCard } from '../features/plants/PlantCard'
 import { PlantFormDialog } from '../features/plants/PlantFormDialog'
+import { BulkPlantEditDialog } from '../features/plants/BulkPlantEditDialog'
 import {
   filterCollectionPlants,
   type PlantStatusFilter,
@@ -40,6 +41,7 @@ export function CollectionPage() {
   const [selecting, setSelecting] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [addingTask, setAddingTask] = useState(false)
+  const [bulkPlants, setBulkPlants] = useState<Plant[]>()
   const [filter, setFilter] = useState<PlantStatusFilter>('active')
   const [sort, setSort] = useState<CollectionSort>('nickname')
   const [dialogPlant, setDialogPlant] = useState<Plant | null | undefined>()
@@ -246,7 +248,28 @@ export function CollectionPage() {
             <Plus size={16} />
             Add task
           </Button>
+          <Button
+            variant="secondary"
+            disabled={!plants.some((plant) => selected.has(plant.id))}
+            onClick={() =>
+              setBulkPlants(plants.filter((plant) => selected.has(plant.id)))
+            }
+          >
+            Edit selected
+          </Button>
         </div>
+      )}
+      {bulkPlants && (
+        <BulkPlantEditDialog
+          plants={bulkPlants}
+          spaces={spaces}
+          onClose={() => setBulkPlants(undefined)}
+          onSaved={() => {
+            setBulkPlants(undefined)
+            setSelected(new Set())
+            setSelecting(false)
+          }}
+        />
       )}
       {addingTask && (
         <PlantTaskDialog
