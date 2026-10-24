@@ -3,6 +3,7 @@ import { Page } from '../components/ui/Page'
 import { useUiStore, type ThemePreference } from '../stores/uiStore'
 import { Button } from '../components/ui/Button'
 import { useAuth } from '../auth/authContext'
+import { CollectionBackupCard } from '../features/backup/CollectionBackupCard'
 
 const themes: Array<{
   value: ThemePreference
@@ -59,6 +60,7 @@ export function SettingsPage() {
           ))}
         </div>
       </Card>
+      <CollectionBackupCard />
       {auth.configured && (
         <Card
           title="Account"
