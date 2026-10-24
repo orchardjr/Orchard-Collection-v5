@@ -52,14 +52,23 @@ export async function readPrintMedia() {
   }))
 }
 
-export function useCollectionPrintData() {
+export function useCollectionPrintData({
+  enabled = true,
+  thumbnails = true,
+} = {}) {
   const local = !isSupabaseConfigured || isLocalCollectionMode()
   const query = <T>(
     key: string,
     cloud: () => Promise<T[]>,
     localRead: () => Promise<T[]>,
   ) => ({
-    queryKey: [key, 'collection-print', local],
+    queryKey: [
+      key,
+      'collection-print',
+      local,
+      key === 'media' ? thumbnails : null,
+    ],
+    enabled,
     queryFn: async () => {
       if (!local) return cloud()
       if (!isSupabaseConfigured) await ensureSeedData()
@@ -83,7 +92,13 @@ export function useCollectionPrintData() {
     ),
   )
   const media = useQuery(
-    query('media', readPrintMedia, () => mediaRepository.getAll()),
+    query(
+      'media',
+      thumbnails
+        ? readPrintMedia
+        : () => readPrintRows<MediaAsset>('plant_media'),
+      () => mediaRepository.getAll(),
+    ),
   )
   const tags = useQuery(
     query(
