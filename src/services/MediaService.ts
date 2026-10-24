@@ -6,12 +6,14 @@ import {
 import { prepareMediaFile } from '../features/media/mediaProcessing'
 import type { MediaAsset } from '../models'
 import { formatSupabaseErrorDetails } from '../data/supabaseErrorDetails'
+import { SavedMediaWarning } from '../data/SavedMediaWarning'
 
 export interface MediaImportResult {
   fileName: string
   success: boolean
   asset?: MediaAsset
   error?: string
+  warning?: string
 }
 export interface MediaImportProgress {
   completed: number
@@ -27,7 +29,7 @@ export class MediaService {
     files: File[],
     onProgress?: (progress: MediaImportProgress) => void,
   ): Promise<MediaImportResult[]> {
-    const existing = await mediaRepository.getByPlantId(plantId)
+    const existing = await mediaRepository.getByPlantId(plantId, true)
     const results: MediaImportResult[] = []
     for (const [index, file] of files.entries()) {
       try {
@@ -41,11 +43,19 @@ export class MediaService {
         const asset = await mediaRepository.create(input)
         results.push({ fileName: file.name, success: true, asset })
       } catch (error) {
-        results.push({
-          fileName: file.name,
-          success: false,
-          error: error instanceof Error ? error.message : 'Import failed.',
-        })
+        if (error instanceof SavedMediaWarning) {
+          results.push({
+            fileName: file.name,
+            success: true,
+            asset: error.asset,
+            warning: error.message,
+          })
+        } else
+          results.push({
+            fileName: file.name,
+            success: false,
+            error: error instanceof Error ? error.message : 'Import failed.',
+          })
       }
       onProgress?.({
         completed: index + 1,
@@ -58,17 +68,23 @@ export class MediaService {
       result.asset ? [result.asset] : [],
     )
     if (imported.length) {
+      const warn = (message: string) => {
+        for (const result of results)
+          if (result.success)
+            result.warning = [result.warning, message].filter(Boolean).join(' ')
+      }
       const hero = imported.find((asset) => asset.isHero)
       if (hero) {
         try {
-          await plantRepository.update(plantId, {
+          const updated = await plantRepository.update(plantId, {
             heroMediaId: hero.id,
             heroImageUrl: undefined,
           })
+          if (!updated)
+            throw new Error('Plant was not found or could not be updated.')
         } catch (error) {
-          throw new Error(
-            `Photo was uploaded and its plant_media row was created, but the plant hero-image update failed. Plant ID: ${plantId}. Media ID: ${hero.id}. ${formatSupabaseErrorDetails(error)}`,
-            { cause: error },
+          warn(
+            `Photo saved, but the cover-image update failed. Use the gallery's cover action to retry without uploading again. ${formatSupabaseErrorDetails(error)}`,
           )
         }
       }
@@ -86,9 +102,8 @@ export class MediaService {
           metadata: { count: imported.length, mediaId: imported[0]?.id ?? '' },
         })
       } catch (error) {
-        throw new Error(
-          `Photo upload succeeded, but its timeline event failed. Plant ID: ${plantId}. ${formatSupabaseErrorDetails(error)}`,
-          { cause: error },
+        warn(
+          `Photo saved, but its timeline event could not be recorded. Do not upload it again. ${formatSupabaseErrorDetails(error)}`,
         )
       }
     }

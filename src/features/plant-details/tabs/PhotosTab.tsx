@@ -2,6 +2,7 @@ import { Heart, Image as ImageIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { Badge } from '../../../components/ui/Badge'
+import { Button } from '../../../components/ui/Button'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { MediaAssetEditor } from '../../media/MediaAssetEditor'
 import { MediaImporter } from '../../media/MediaImporter'
@@ -35,6 +36,13 @@ export function PhotosTab({ plantId, media }: PhotosTabProps) {
 
   return (
     <div className="space-y-6">
+      <MediaImporter
+        key={plantId}
+        disabled={busy}
+        onImport={(files, onProgress) =>
+          mutations.importMedia.mutateAsync({ plantId, files, onProgress })
+        }
+      />
       {hero ? (
         <button
           type="button"
@@ -109,6 +117,15 @@ export function PhotosTab({ plantId, media }: PhotosTabProps) {
                   />
                 )}
               </button>
+              <Button
+                variant="ghost"
+                className="w-full rounded-none"
+                disabled={busy}
+                onClick={() => mutations.setHero.mutate(asset)}
+                aria-label={`Use ${asset.fileName} as cover`}
+              >
+                Use as cover
+              </Button>
             </article>
           ))}
         </div>
@@ -147,12 +164,6 @@ export function PhotosTab({ plantId, media }: PhotosTabProps) {
         />
       )}
 
-      <MediaImporter
-        disabled={busy}
-        onImport={(files, onProgress) =>
-          mutations.importMedia.mutateAsync({ plantId, files, onProgress })
-        }
-      />
       {viewerId && (
         <MediaViewer
           assets={media}

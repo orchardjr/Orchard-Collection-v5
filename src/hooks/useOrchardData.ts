@@ -396,11 +396,11 @@ export function useMediaMutations() {
       mediaService.importFiles(plantId, files, (progress) =>
         onProgress?.(progress.completed, progress.total),
       ),
-    onSuccess: refresh,
+    onSettled: refresh,
   })
   const setHero = useMutation({
     mutationFn: (asset: MediaAsset) => mediaService.setHero(asset),
-    onSuccess: refresh,
+    onSettled: refresh,
   })
   const toggleFavorite = useMutation({
     mutationFn: (asset: MediaAsset) => mediaService.toggleFavorite(asset),
