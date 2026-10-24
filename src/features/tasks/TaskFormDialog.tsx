@@ -18,6 +18,7 @@ import type { PlantAssignmentTag } from './usePlantAssignmentTags'
 
 export function TaskFormDialog({
   task,
+  initialValues,
   plants,
   spaces,
   media = [],
@@ -29,6 +30,7 @@ export function TaskFormDialog({
   onSave,
 }: {
   task?: Task
+  initialValues?: Pick<Task, 'title' | 'type'>
   plants: Plant[]
   spaces: Space[]
   media?: MediaAsset[]
@@ -39,8 +41,10 @@ export function TaskFormDialog({
   onClose: () => void
   onSave: (input: CreateInput<Task>) => Promise<void>
 }) {
-  const [title, setTitle] = useState(task?.title ?? '')
-  const [type, setType] = useState<TaskType>(task?.type ?? 'custom')
+  const [title, setTitle] = useState(task?.title ?? initialValues?.title ?? '')
+  const [type, setType] = useState<TaskType>(
+    task?.type ?? initialValues?.type ?? 'custom',
+  )
   const [due, setDue] = useState(inputDate(task?.dueAt))
   const [time, setTime] = useState(
     task?.dueAt && (task.dueAt.getHours() || task.dueAt.getMinutes())

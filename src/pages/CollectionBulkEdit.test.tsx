@@ -3,6 +3,19 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import type { Plant } from '../models'
+vi.mock('../features/health/usePlantHealth', () => ({
+  usePlantHealth: () => ({
+    data: ['Fern', 'Archived'].map((plantId) => ({
+      id: plantId,
+      plantId,
+      metadata: { feature: 'plant-health-v1', healthStatus: 'quarantined' },
+      occurredAt: new Date(),
+      createdAt: new Date(),
+    })),
+    isPending: false,
+    error: null,
+  }),
+}))
 vi.mock('../features/plants/useCollectionAttention', () => ({
   useCollectionAttention: () => ({
     plants: ['Aloe', 'Fern', 'Archived'].map((id) => ({
@@ -58,6 +71,37 @@ vi.mock('../features/plants/BulkPlantEditDialog', () => ({
 }))
 import { CollectionPage } from './CollectionPage'
 describe('Collection bulk selection', () => {
+  it('combines health and lifecycle filters without hiding quarantined active plants', () => {
+    render(
+      <MemoryRouter>
+        <CollectionPage />
+      </MemoryRouter>,
+    )
+    fireEvent.change(screen.getByLabelText('Health filter'), {
+      target: { value: 'quarantined' },
+    })
+    expect(screen.getByText('Fern')).toBeInTheDocument()
+    expect(screen.queryByText('Aloe')).not.toBeInTheDocument()
+    expect(
+      screen.queryByText('Archived', { selector: 'div' }),
+    ).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Filter'), {
+      target: { value: 'archived' },
+    })
+    expect(
+      screen.getByText('Archived', { selector: 'div' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Fern')).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Filter'), {
+      target: { value: 'all' },
+    })
+    expect(screen.getByText('Fern')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Health filter'), {
+      target: { value: 'unrecorded' },
+    })
+    expect(screen.getByText('Aloe')).toBeInTheDocument()
+    expect(screen.queryByText('Fern')).not.toBeInTheDocument()
+  })
   it('opens an attention deep link and selects only matching plants for bulk editing', () => {
     render(
       <MemoryRouter initialEntries={['/collection?attention=noPhotos']}>

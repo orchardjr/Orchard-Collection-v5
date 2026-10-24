@@ -1,7 +1,14 @@
 import { useRef, type KeyboardEvent } from 'react'
 
 export type PlantDetailsTabId =
-  'overview' | 'timeline' | 'tasks' | 'photos' | 'care' | 'notes' | 'properties'
+  | 'overview'
+  | 'timeline'
+  | 'tasks'
+  | 'photos'
+  | 'care'
+  | 'health'
+  | 'notes'
+  | 'properties'
 
 const tabs: Array<{ id: PlantDetailsTabId; label: string }> = [
   { id: 'overview', label: 'Overview' },
@@ -9,6 +16,7 @@ const tabs: Array<{ id: PlantDetailsTabId; label: string }> = [
   { id: 'tasks', label: 'Tasks' },
   { id: 'photos', label: 'Photos' },
   { id: 'care', label: 'Care' },
+  { id: 'health', label: 'Health' },
   { id: 'notes', label: 'Notes' },
   { id: 'properties', label: 'Properties' },
 ]

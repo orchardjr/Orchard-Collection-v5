@@ -48,6 +48,36 @@ const spaces: Space[] = [
   },
 ]
 describe('task assignment form', () => {
+  it('creates a prefilled health follow-up through the existing task form', async () => {
+    const save = vi.fn().mockResolvedValue(undefined)
+    render(
+      <TaskFormDialog
+        plants={plants}
+        spaces={spaces}
+        plantIds={['a']}
+        initialValues={{ title: 'Health follow-up: Cattleya', type: 'inspect' }}
+        onClose={vi.fn()}
+        onSave={save}
+      />,
+    )
+    expect((screen.getByLabelText('Task name') as HTMLInputElement).value).toBe(
+      'Health follow-up: Cattleya',
+    )
+    expect(
+      (screen.getByLabelText('Task type') as HTMLSelectElement).value,
+    ).toBe('inspect')
+    fireEvent.change(screen.getByLabelText('Due date'), {
+      target: { value: '2026-11-01' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save task' }))
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1))
+    expect(save.mock.calls[0]![0]).toMatchObject({
+      title: 'Health follow-up: Cattleya',
+      type: 'inspect',
+      plantIds: ['a'],
+      status: 'open',
+    })
+  })
   it('preassigns the current plant and submits one task for selected plants in a Space', async () => {
     const save = vi.fn().mockResolvedValue(undefined)
     render(

@@ -6,15 +6,18 @@ import {
 } from '../../hooks/useOrchardData'
 import { TaskFormDialog } from './TaskFormDialog'
 import { usePlantAssignmentTags } from './usePlantAssignmentTags'
+import type { Task } from '../../models'
 
 export function PlantTaskDialog({
   plantIds,
   onClose,
   onSaved,
+  initialValues,
 }: {
   plantIds: string[]
   onClose: () => void
   onSaved?: () => void
+  initialValues?: Pick<Task, 'title' | 'type'>
 }) {
   const { data: plants = [] } = usePlants()
   const { data: spaces = [] } = useSpaces()
@@ -23,6 +26,7 @@ export function PlantTaskDialog({
   const { createTask } = useTaskMutations()
   return (
     <TaskFormDialog
+      initialValues={initialValues}
       plants={plants}
       spaces={spaces}
       media={media}
