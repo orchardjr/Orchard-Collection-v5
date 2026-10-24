@@ -12,6 +12,7 @@ import {
   formatSupabaseErrorDetails,
   getSupabaseErrorDetails,
 } from './supabaseErrorDetails'
+import { SavedMediaWarning } from './SavedMediaWarning'
 
 const bucket = 'plant-media'
 
@@ -71,14 +72,27 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
     return data ? this.withUrls(data) : undefined
   }
 
-  async getByPlantId(plantId: string) {
-    return (await this.getAll()).filter((asset) => asset.plantId === plantId)
+  async getByPlantId(plantId: string, metadataOnly = false) {
+    const { data, error } = await requireSupabase()
+      .from(this.table)
+      .select('*')
+      .eq('plant_id', plantId)
+      .order('uploaded_at', { ascending: false })
+    if (error) throw repositoryError('plant media read', error)
+    if (metadataOnly)
+      return (data ?? []).map((row) => fromSupabaseRow<MediaAsset>(row))
+    return Promise.all((data ?? []).map((row) => this.withUrls(row)))
   }
 
   async getByFingerprint(fingerprint: string) {
-    return (await this.getAll()).find(
-      (asset) => asset.fingerprint === fingerprint,
-    )
+    const { data, error } = await requireSupabase()
+      .from(this.table)
+      .select('*')
+      .eq('fingerprint', fingerprint)
+      .limit(1)
+      .maybeSingle()
+    if (error) throw repositoryError('photo duplicate check', error)
+    return data ? fromSupabaseRow<MediaAsset>(data) : undefined
   }
 
   override async create(input: CreateInput<MediaAsset>) {
@@ -95,6 +109,7 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
     const uploaded: string[] = []
     let stage = 'Storage original upload'
     let insertPayload: Record<string, unknown> | undefined
+    let saved: Record<string, unknown>
     try {
       const original = await client.storage
         .from(bucket)
@@ -129,8 +144,7 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
         .select('*')
         .single()
       if (error) throw error
-      stage = 'signed URL creation'
-      return this.withUrls(data)
+      saved = data
     } catch (error) {
       const diagnostic = {
         stage,
@@ -140,7 +154,8 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
         insertPayload,
         error: getSupabaseErrorDetails(error),
       }
-      console.error('[orchard.media-upload]', diagnostic)
+      if (import.meta.env.DEV)
+        console.error('[orchard.media-upload]', diagnostic)
       let cleanup = ''
       if (uploaded.length) {
         const removal = await client.storage.from(bucket).remove(uploaded)
@@ -151,6 +166,15 @@ export class CloudMediaRepository extends SupabaseRepository<MediaAsset> {
       throw new Error(
         `Photo upload failed during ${stage}. Plant ID: ${input.plantId}. Storage path: ${originalPath}. ${formatSupabaseErrorDetails(error)}${cleanup}`,
         { cause: error },
+      )
+    }
+    try {
+      return await this.withUrls(saved)
+    } catch (error) {
+      throw new SavedMediaWarning(
+        fromSupabaseRow<MediaAsset>(saved),
+        'Photo saved, but its preview could not be loaded. Refresh the gallery; do not upload it again.',
+        error,
       )
     }
   }
