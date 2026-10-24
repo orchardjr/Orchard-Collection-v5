@@ -20,6 +20,7 @@ import { StatCard } from '../components/ui/StatCard'
 import { useDashboardData } from '../hooks/useOrchardData'
 import type { Task } from '../models'
 import { Link } from 'react-router-dom'
+import { NeedsAttentionCard } from '../features/plants/NeedsAttentionCard'
 
 function formatTaskTime(task: Task) {
   if (task.status !== 'open') return task.status
@@ -91,6 +92,7 @@ export function DashboardPage() {
         />
       }
     >
+      <NeedsAttentionCard />
       {isLoading || !data ? (
         <DashboardLoading />
       ) : (

@@ -1,6 +1,11 @@
 import { Filter, Leaf, Plus, Printer, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import {
+  attentionFilters,
+  parseAttentionFilter,
+} from '../features/plants/collectionAttention'
+import { useCollectionAttention } from '../features/plants/useCollectionAttention'
 import { PlantTaskDialog } from '../features/tasks/PlantTaskDialog'
 import { usePlantAssignmentTags } from '../features/tasks/usePlantAssignmentTags'
 
@@ -29,7 +34,11 @@ type CollectionSort = 'nickname' | 'scientificName' | 'createdAt'
 
 export function CollectionPage() {
   const navigate = useNavigate()
-  const { data: plants = [], isLoading } = usePlants()
+  const { data: basePlants = [], isLoading } = usePlants()
+  const [params, setParams] = useSearchParams()
+  const attentionFilter = parseAttentionFilter(params.get('attention'))
+  const attentionData = useCollectionAttention(!!attentionFilter)
+  const plants = attentionFilter ? attentionData.plants : basePlants
   const { data: media = [], isLoading: mediaLoading } = useAllMedia()
   const { data: spaces = [] } = useSpaces()
   const { archivePlant, createPlant, resetErrors, restorePlant, updatePlant } =
@@ -47,7 +56,18 @@ export function CollectionPage() {
   const [dialogPlant, setDialogPlant] = useState<Plant | null | undefined>()
 
   const visiblePlants = useMemo(() => {
-    return filterCollectionPlants(plants, filter, search)
+    return filterCollectionPlants(
+      plants,
+      attentionFilter ? 'active' : filter,
+      search,
+    )
+      .filter(
+        (plant) =>
+          !attentionFilter ||
+          (!attentionData.error &&
+            !attentionData.loading &&
+            attentionData.attention[attentionFilter].has(plant.id)),
+      )
       .filter(
         (plant) =>
           (!spaceFilter || plant.spaceId === spaceFilter) &&
@@ -63,7 +83,19 @@ export function CollectionPage() {
           sensitivity: 'base',
         })
       })
-  }, [filter, plants, search, sort, spaceFilter, tagFilter, plantTags])
+  }, [
+    filter,
+    plants,
+    search,
+    sort,
+    spaceFilter,
+    tagFilter,
+    plantTags,
+    attentionFilter,
+    attentionData.attention,
+    attentionData.error,
+    attentionData.loading,
+  ])
 
   const openDialog = (plant: Plant | null) => {
     resetErrors()
@@ -171,7 +203,8 @@ export function CollectionPage() {
           <Filter size={16} />
           <span className="sr-only">Filter</span>
           <select
-            value={filter}
+            value={attentionFilter ? 'active' : filter}
+            disabled={!!attentionFilter}
             onChange={(event) =>
               setFilter(event.target.value as PlantStatusFilter)
             }
@@ -197,6 +230,26 @@ export function CollectionPage() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
+        <select
+          aria-label="Needs attention filter"
+          className="min-h-11 min-w-0 rounded-xl border border-border bg-surface px-3"
+          value={attentionFilter ?? ''}
+          onChange={(event) => {
+            const next = new URLSearchParams(params)
+            if (event.target.value) next.set('attention', event.target.value)
+            else next.delete('attention')
+            setParams(next)
+            setSelected(new Set())
+            setFilter('active')
+          }}
+        >
+          <option value="">All attention categories</option>
+          {attentionFilters.map(({ id, label }) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </select>
         <select
           aria-label="Collection space"
           className="min-h-11 min-w-0 rounded-xl border border-border bg-surface px-3"
@@ -228,6 +281,50 @@ export function CollectionPage() {
           </select>
         )}
       </div>
+      {attentionFilter && (
+        <div className="mb-4 rounded-xl border border-border bg-surface p-4 text-sm">
+          <p>
+            Needs attention:{' '}
+            {
+              attentionFilters.find((item) => item.id === attentionFilter)
+                ?.label
+            }{' '}
+            · Active plants only. Search, space, and tag filters still apply.
+          </p>
+          {attentionData.error ? (
+            <div role="alert">
+              <p>
+                Attention information could not be loaded. Results are
+                unavailable.
+              </p>
+              <Button
+                variant="secondary"
+                onClick={() => void attentionData.retry()}
+              >
+                Retry attention data
+              </Button>
+            </div>
+          ) : attentionData.loading ? (
+            <p role="status">Checking your collection…</p>
+          ) : (
+            <p>
+              {visiblePlants.length} matching plants. Select plants to bulk-edit
+              them or add a task.
+            </p>
+          )}
+          <Button
+            variant="ghost"
+            onClick={() => {
+              const next = new URLSearchParams(params)
+              next.delete('attention')
+              setParams(next)
+              setSelected(new Set())
+            }}
+          >
+            Clear attention filter
+          </Button>
+        </div>
+      )}
       {selecting && (
         <div className="sticky top-2 z-20 mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-3 shadow-card">
           <span className="text-sm font-semibold">
@@ -290,7 +387,9 @@ export function CollectionPage() {
         </p>
       )}
 
-      {isLoading || mediaLoading ? (
+      {attentionFilter && attentionData.error ? null : isLoading ||
+        mediaLoading ||
+        (attentionFilter && attentionData.loading) ? (
         <div
           className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
           aria-label="Loading collection"

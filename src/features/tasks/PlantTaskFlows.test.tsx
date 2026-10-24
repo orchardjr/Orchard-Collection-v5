@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CollectionPage } from '../../pages/CollectionPage'
 import { PlantDetailsPage } from '../../pages/PlantDetailsPage'
@@ -97,9 +98,11 @@ beforeEach(() => {
 describe('plant and Collection task shortcuts', () => {
   it('creates one task from all filtered active Collection plants', async () => {
     render(
-      <MemoryRouter>
-        <CollectionPage />
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <CollectionPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
     )
     fireEvent.change(screen.getByLabelText('Search plants'), {
       target: { value: 'orchid' },
