@@ -7,6 +7,8 @@ import {
 } from '../features/plants/collectionAttention'
 import { useCollectionAttention } from '../features/plants/useCollectionAttention'
 import { PlantTaskDialog } from '../features/tasks/PlantTaskDialog'
+import { usePlantHealth } from '../features/health/usePlantHealth'
+import { healthByPlant, healthStatuses } from '../features/health/plantHealth'
 import { usePlantAssignmentTags } from '../features/tasks/usePlantAssignmentTags'
 
 import { Button } from '../components/ui/Button'
@@ -47,6 +49,12 @@ export function CollectionPage() {
   const { data: plantTags = [] } = usePlantAssignmentTags()
   const [spaceFilter, setSpaceFilter] = useState('')
   const [tagFilter, setTagFilter] = useState('')
+  const [healthFilter, setHealthFilter] = useState('')
+  const health = usePlantHealth(!!healthFilter)
+  const healthMap = useMemo(
+    () => healthByPlant(health.data ?? []),
+    [health.data],
+  )
   const [selecting, setSelecting] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [addingTask, setAddingTask] = useState(false)
@@ -83,8 +91,19 @@ export function CollectionPage() {
           sensitivity: 'base',
         })
       })
+      .filter(
+        (plant) =>
+          !healthFilter ||
+          (!health.isPending &&
+            !health.error &&
+            (healthMap.get(plant.id) ?? 'unrecorded') === healthFilter),
+      )
   }, [
     filter,
+    healthFilter,
+    healthMap,
+    health.isPending,
+    health.error,
     plants,
     search,
     sort,
@@ -231,6 +250,23 @@ export function CollectionPage() {
 
       <div className="mb-4 flex flex-wrap gap-2">
         <select
+          aria-label="Health filter"
+          className="min-h-11 min-w-0 rounded-xl border border-border bg-surface px-3"
+          value={healthFilter}
+          onChange={(e) => {
+            setHealthFilter(e.target.value)
+            setSelected(new Set())
+          }}
+        >
+          <option value="">All health statuses</option>
+          <option value="unrecorded">Not recorded</option>
+          {Object.entries(healthStatuses).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <select
           aria-label="Needs attention filter"
           className="min-h-11 min-w-0 rounded-xl border border-border bg-surface px-3"
           value={attentionFilter ?? ''}
@@ -281,6 +317,20 @@ export function CollectionPage() {
           </select>
         )}
       </div>
+      {healthFilter && (health.isPending || health.error) && (
+        <div className="mb-4 text-sm" role={health.error ? 'alert' : 'status'}>
+          {health.error ? (
+            <>
+              Health information could not be loaded. Results are unavailable.{' '}
+              <Button variant="secondary" onClick={() => void health.refetch()}>
+                Retry health data
+              </Button>
+            </>
+          ) : (
+            'Loading health information…'
+          )}
+        </div>
+      )}
       {attentionFilter && (
         <div className="mb-4 rounded-xl border border-border bg-surface p-4 text-sm">
           <p>

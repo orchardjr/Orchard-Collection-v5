@@ -1,5 +1,6 @@
 import { Archive, ArrowLeft, RotateCcw, Trash2, Plus } from 'lucide-react'
 import { PlantTaskDialog } from '../features/tasks/PlantTaskDialog'
+import { HealthTab } from '../features/health/HealthTab'
 import { assignedPlantIds } from '../features/tasks/taskScheduling'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState, type ReactNode } from 'react'
@@ -125,6 +126,14 @@ export function PlantDetailsPage() {
   ]
 
   const content: Record<PlantDetailsTabId, ReactNode> = {
+    health: (
+      <HealthTab
+        key={plant.id}
+        plant={plant}
+        media={media}
+        onPhotos={() => setActiveTab('photos')}
+      />
+    ),
     overview: (
       <div className="space-y-6">
         <OverviewTab
