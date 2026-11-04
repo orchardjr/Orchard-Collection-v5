@@ -147,7 +147,13 @@ export function useSpaceMutations() {
 }
 
 export function useTaskMutations() {
-  const refresh = useRefresh(['tasks', 'plants', 'timeline', 'dashboard'])
+  const refresh = useRefresh([
+    'tasks',
+    'plants',
+    'timeline',
+    'dashboard',
+    'reptiles',
+  ])
   return {
     createTask: useMutation({
       mutationFn: (input: CreateInput<Task>) => taskService.create(input),

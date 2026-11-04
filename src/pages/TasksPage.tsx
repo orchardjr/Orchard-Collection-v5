@@ -8,6 +8,7 @@ import {
   SkipForward,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -210,7 +211,11 @@ export function TasksPage() {
                           <Badge variant="accent">{task.type}</Badge>
                           <Badge>{task.status}</Badge>
                           <Badge>{task.priority}</Badge>
-                          <Badge>{recurrenceLabel(task)}</Badge>
+                          <Badge>
+                            {task.reptileRoutineId
+                              ? 'Reptile care schedule'
+                              : recurrenceLabel(task)}
+                          </Badge>
                           {task.dueAt && (
                             <Badge>{task.dueAt.toLocaleString()}</Badge>
                           )}
@@ -218,7 +223,9 @@ export function TasksPage() {
                         <div className="mt-4 flex flex-wrap gap-2">
                           <Button
                             variant="ghost"
-                            disabled={task.careManaged}
+                            disabled={
+                              task.careManaged || !!task.reptileRoutineId
+                            }
                             onClick={() => setEditing(task)}
                           >
                             <Pencil size={15} />
@@ -247,6 +254,7 @@ export function TasksPage() {
                               variant="secondary"
                               disabled={
                                 task.careManaged ||
+                                !!task.reptileRoutineId ||
                                 (!!task.recurrence &&
                                   task.recurrence !== 'none')
                               }
@@ -258,7 +266,9 @@ export function TasksPage() {
                           )}
                           <Button
                             variant="ghost"
-                            disabled={task.careManaged}
+                            disabled={
+                              task.careManaged || !!task.reptileRoutineId
+                            }
                             onClick={() =>
                               window.confirm('Archive this task?') &&
                               m.archiveTask.mutate(task.id)
@@ -267,6 +277,14 @@ export function TasksPage() {
                             <Archive size={15} />
                             Archive
                           </Button>
+                          {task.reptileRoutineId && (
+                            <Link
+                              className="p-3 text-sm text-accent"
+                              to="/reptiles"
+                            >
+                              Manage reptile schedule
+                            </Link>
+                          )}
                         </div>
                       </Card>
                     ))}

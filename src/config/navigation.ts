@@ -10,6 +10,7 @@ import {
   ScanLine,
   Tags,
   Bug,
+  Turtle,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -28,6 +29,7 @@ export const navigationItems: NavigationItem[] = [
   { label: 'Timeline', path: '/timeline', icon: Clock3 },
   { label: 'Tasks', path: '/tasks', icon: ListTodo },
   { label: 'Feeders', path: '/feeders', icon: Bug },
+  { label: 'Reptiles', path: '/reptiles', icon: Turtle },
   { label: 'Label Studio', path: '/label-studio', icon: Tags },
   { label: 'Analytics', path: '/analytics', icon: BarChart3 },
   { label: 'Settings', path: '/settings', icon: Settings },
