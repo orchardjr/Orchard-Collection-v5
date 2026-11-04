@@ -35,6 +35,10 @@ Confirmed pre-insert upload failures receive best-effort file cleanup. An ambigu
 
 ## Reports and scope
 
+Print Dusting Calendar is available from the supplement calendar on the reptile dashboard and individual profiles. Select a month and one or more active reptiles, then download a landscape Letter PDF. Daily cells contain reptile/product/D3 labels and paper checkboxes; crowded days continue in full on detail pages. The mobile setup shows a daily agenda preview of the same entries. No database writes, new dependencies or migrations are required.
+
+The printable calendar includes saved non-archived occurrences and projects enabled schedules beyond the latest saved due/completion date, using each routine's timezone and the same day/week/weekday/month-clamping/custom-date rules as task scheduling. Projected dates are estimates assuming on-time completion, not administered doses. Disabled routines retain saved history but do not project. Every-feeding routines list undated reminders and any already-saved tasks, without guessing future feeding dates. D3 overlap markers indicate multiple D3-containing entries for the same animal and calendar date; they are not veterinary advice. Printing does not mark doses given.
+
 Reptile Care Report offers one or multiple animals, section selection, downloadable Letter PDF, opening the PDF for browser printing, and separate weight/feeding CSVs. PDFs use embedded Unicode fonts, vector weight charts, wrapped text, pagination and page numbers. CSV formulas are escaped. Photo attachments remain in the gallery rather than embedded in reports. Reptile data is not automatically imported from legacy `plants.kind=animal` or feeder animal-name records. This release requires a cloud account; it does not silently switch to local-only data on errors. Existing Plant Collection backup is separate from reptile report export.
 
 ## Rollback

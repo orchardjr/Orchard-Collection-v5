@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import type { ReptileData } from './types'
+import { PrintDustingCalendar } from './PrintDustingCalendar'
 export function SupplementCalendar({
   data,
   reptileId,
@@ -16,6 +17,7 @@ export function SupplementCalendar({
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   )
   const [day, setDay] = useState<number>()
+  const [printing, setPrinting] = useState(false)
   const routines = new Map(
     data.routines
       .filter(
@@ -41,6 +43,16 @@ export function SupplementCalendar({
     .sort((a, b) => a.dueAt!.getTime() - b.dueAt!.getTime())
   return (
     <section className="space-y-3">
+      <Button variant="secondary" onClick={() => setPrinting(true)}>
+        Print Dusting Calendar
+      </Button>
+      {printing && (
+        <PrintDustingCalendar
+          data={data}
+          reptileId={reptileId}
+          onClose={() => setPrinting(false)}
+        />
+      )}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Button
           variant="secondary"

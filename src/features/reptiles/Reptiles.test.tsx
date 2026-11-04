@@ -35,8 +35,34 @@ import { EventDialog } from './EventDialog'
 import { RoutineDialog } from './RoutineDialog'
 import { SupplementCalendar } from './SupplementCalendar'
 import { WeightPanel } from './WeightPanel'
+import { PrintDustingCalendar } from './PrintDustingCalendar'
 const date = new Date()
 const base = { createdAt: date, updatedAt: date }
+it('offers a read-only monthly print setup with active reptile selection', () => {
+  render(<PrintDustingCalendar data={mocks.data} onClose={vi.fn()} />)
+  expect(screen.getByRole('checkbox', { name: 'Echo' })).toBeChecked()
+  expect(
+    screen.queryByRole('checkbox', { name: 'Archived reptile' }),
+  ).not.toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText('Calendar month'), {
+    target: { value: '2026-12' },
+  })
+  expect(
+    screen.getByRole('region', { name: 'Dusting calendar preview' }),
+  ).toHaveTextContent('2026-12')
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Echo' }))
+  expect(
+    screen.getByRole('button', { name: 'Download calendar PDF' }),
+  ).toBeDisabled()
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Select all active reptiles' }),
+  )
+  expect(
+    screen.getByRole('button', { name: 'Download calendar PDF' }),
+  ).toBeEnabled()
+  expect(mocks.create).not.toHaveBeenCalled()
+  expect(mocks.rpc).not.toHaveBeenCalled()
+})
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.create.mockResolvedValue({ id: 'saved' })
