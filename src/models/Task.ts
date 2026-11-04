@@ -18,6 +18,7 @@ export type TaskRecurrence =
   'none' | 'daily' | 'weekly' | 'interval' | 'monthly'
 
 export interface Task extends BaseRecord {
+  reptileRoutineId?: string
   plantId?: string
   plantIds?: string[]
   careManaged?: boolean

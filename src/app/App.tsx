@@ -37,6 +37,7 @@ const LabelStudioPage = page(
   'LabelStudioPage',
 )
 const MediaPage = page(() => import('../pages/MediaPage'), 'MediaPage')
+const ReptilesPage = page(() => import('../pages/ReptilesPage'), 'ReptilesPage')
 const PlantDetailsPage = page(
   () => import('../pages/PlantDetailsPage'),
   'PlantDetailsPage',
@@ -131,6 +132,8 @@ export function App() {
             <Route path="feeders/print/:type/:id" element={<DymoPrintPage />} />
             <Route element={<AppLayout />}>
               <Route index element={<DashboardPage />} />
+              <Route path="reptiles" element={<ReptilesPage />} />
+              <Route path="reptiles/:reptileId" element={<ReptilesPage />} />
               <Route
                 path="collection"
                 element={
