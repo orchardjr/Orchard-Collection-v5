@@ -5,6 +5,7 @@ const links = [
   ['Dashboard', '/feeders'],
   ['Colonies', '/feeders/colonies'],
   ['Crickets', '/feeders/crickets'],
+  ['Silkworms', '/feeders/silkworms'],
   ['Inventory', '/feeders/inventory'],
   ['Maintenance', '/feeders/maintenance'],
   ['Harvests', '/feeders/harvests'],

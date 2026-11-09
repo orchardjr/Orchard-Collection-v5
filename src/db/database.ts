@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 
+import type { SilkwormCohort, SilkwormEvent } from '../models/Silkworm'
 import type {
   CricketBatch,
   FeederColony,
@@ -57,6 +58,9 @@ export class OrchardDatabase extends Dexie {
   feederSettings!: Table<FeederSettings, string>
   nfcTags!: Table<NfcTag, string>
   labelTemplates!: Table<LabelTemplate, string>
+
+  silkwormCohorts!: Table<SilkwormCohort, string>
+  silkwormEvents!: Table<SilkwormEvent, string>
 
   constructor() {
     super('orchard-collection')
@@ -177,6 +181,11 @@ export class OrchardDatabase extends Dexie {
 
     this.version(10).stores({
       labelTemplates: 'id, &name, createdAt, updatedAt',
+    })
+
+    this.version(11).stores({
+      silkwormCohorts: 'id',
+      silkwormEvents: 'id, cohortId',
     })
   }
 }
