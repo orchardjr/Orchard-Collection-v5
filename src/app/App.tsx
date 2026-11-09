@@ -55,6 +55,10 @@ const FeederShell = page(
   () => import('../features/feeders/FeederShell'),
   'FeederShell',
 )
+const SilkwormPage = page(
+  () => import('../pages/feeders/SilkwormPage'),
+  'SilkwormPage',
+)
 const FeederDashboardPage = page(
   () => import('../pages/feeders/FeederDashboardPage'),
   'FeederDashboardPage',
@@ -203,6 +207,7 @@ export function App() {
                 }
               >
                 <Route index element={<FeederDashboardPage />} />
+                <Route path="silkworms" element={<SilkwormPage />} />
                 <Route path="colonies" element={<FeederColoniesPage />} />
                 <Route path="colonies/:id" element={<FeederDetailPage />} />
                 <Route path="crickets" element={<CricketBatchesPage />} />
